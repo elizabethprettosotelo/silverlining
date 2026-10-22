@@ -21,6 +21,7 @@ import {
   ease,
   useMotionSafe,
 } from "./ui";
+import Scene from "./Scene";
 
 /* ------------------------------------------------------------------ */
 /* Mood tab bar: good days · stories that turned · vents               */
@@ -49,11 +50,12 @@ export function LockedHome({ onWrite, dateLabel }: { onWrite: () => void; dateLa
   const ok = useMotionSafe();
   const titles = ["The group project", "Burnt the rice twice", "First day back"];
   return (
-    <Screen ground="g-surface">
+    <Screen ground="g-turned">
+      <Scene mood="turned" height={240} />
       <div style={{ height: 150, padding: "18px 24px 0" }}>
         <span className="t-eyebrow">{dateLabel}</span>
       </div>
-      <div className="g-turned" style={{ flex: 1, display: "flex", flexDirection: "column", borderTop: "1px solid var(--line-hairline)" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <div className="screen-body" style={{ paddingTop: 28 }}>
           <h1 className="t-display" style={{ margin: "0 0 18px" }}>Today</h1>
           {titles.map((t, i) => (
@@ -165,10 +167,11 @@ export function Home({
   const left = Math.max(0, TURNED.length - readCount);
   return (
     <Screen ground="g-turned">
-      <div className="g-surface" style={{ padding: "26px 24px 0", borderBottom: "1px solid var(--line-hairline)" }}>
+      <Scene mood="turned" height={240} />
+      <div style={{ padding: "26px 24px 0" }}>
         <div className="row" style={{ justifyContent: "space-between" }}>
           <h1 className="t-display" style={{ margin: 0 }}>Today</h1>
-          <button className="link" style={{ fontSize: 13 }} onClick={onMenuEnd}>End for today</button>
+          <button className="link" style={{ fontSize: 13, background: "var(--surface-default)", padding: "2px 6px", borderRadius: 8 }} onClick={onMenuEnd}>End for today</button>
         </div>
         <div className="card" style={{ marginTop: 16, marginBottom: -36, position: "relative" }}>
           <div className="t-title-sm">“{post.title}” is out there</div>
@@ -405,8 +408,9 @@ export function GoodDays({ onBack, onTab }: { onBack: () => void; onTab: (t: Tab
   const ok = useMotionSafe();
   return (
     <Screen ground="g-good">
+      <Scene mood="good" height={210} />
       <TopBar onBack={onBack} />
-      <div className="screen-body">
+      <div className="screen-body" style={{ paddingTop: 70 }}>
         <h1 className="t-display" style={{ margin: "0 0 18px" }}>Good days</h1>
         <div className="stack" style={{ gap: 14 }}>
           {GOOD.map((s, i) => (
@@ -460,8 +464,9 @@ export function VentDoor({ onBack, onTab }: { onBack: () => void; onTab: (t: Tab
   if (stage === "care") {
     return (
       <Screen ground="g-vent">
+        <Scene mood="vent" height={320} />
         <TopBar onBack={onBack} />
-        <div className="screen-body" style={{ paddingTop: 60 }}>
+        <div className="screen-body" style={{ paddingTop: 200 }}>
           <span className="t-eyebrow" style={{ color: "var(--mood-vent)" }}>Before you open a vent</span>
           <h1 className="t-display" style={{ margin: "14px 0 16px" }}>This is someone&apos;s real day.</h1>
           <p className="t-story" style={{ margin: 0, color: "var(--text-muted)" }}>
@@ -585,7 +590,8 @@ export function ThatsToday({ post, onDone, onGood }: { post: Post; onDone: () =>
   const ok = useMotionSafe();
   return (
     <Screen ground="g-turned">
-      <div className="g-surface" style={{ height: 230, borderBottom: "1px solid var(--line-hairline)" }} />
+      <Scene mood="turned" height={300} time="dusk" />
+      <div style={{ height: 230, flexShrink: 0 }} />
       <div className="screen-body" style={{ display: "grid", placeItems: "center", textAlign: "center" }}>
         <div>
           <motion.div

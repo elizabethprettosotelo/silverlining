@@ -41,3 +41,6 @@ npm install
 npm run dev   # http://localhost:3000
 ```
 It's designed as a 390×844 phone frame on desktop, and it goes full-bleed on a real phone. It's deployed on Vercel.
+
+## Scene headers
+`app/proto/Scene.tsx` draws the illustrated plates (Figma "Scene header", Mood = Good / Turned / Vent) as generated engraved linework in the mood color, fading into the screen's ground. They follow Day/Night automatically. Where they're used: Locked home and Today's reading (turned, 240), That's today (turned, dusk, 300), Good days (good, 210), Vent care note (vent, 320). The scene sits at `z-index: -1` inside `.screen`, so keep headings on the left, where the sky is kept clear.
