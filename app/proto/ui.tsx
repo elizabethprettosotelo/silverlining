@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion, type Variants } from "motion/react";
-import { createContext, useContext, type ReactNode, type CSSProperties } from "react";
+import { createContext, useContext, useEffect, useRef, type ReactNode, type CSSProperties } from "react";
 
 /* ------------------------------------------------------------------ */
 /* Motion tokens (mirrors the Figma "Motion" section)                 */
@@ -119,6 +119,12 @@ export const Hand = ({ size = 22 }: IconProps) => (
     <path d="M7 12V6.5a1.5 1.5 0 013 0V11M10 10.5V5a1.5 1.5 0 013 0v5.5M13 10.5V6a1.5 1.5 0 013 0v6M16 9.5a1.5 1.5 0 013 0V14a7 7 0 01-7 7h-.5A6.5 6.5 0 015 14.5L4 12a1.5 1.5 0 012.6-1.4L7 12" />
   </svg>
 );
+export const Pen = ({ size = 22 }: IconProps) => (
+  <svg viewBox="0 0 24 24" {...svg(size)}><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 013 3L8 18l-4 1 1-4z" /></svg>
+);
+export const BookOpen = ({ size = 22 }: IconProps) => (
+  <svg viewBox="0 0 24 24" {...svg(size)}><path d="M12 7v14M12 7C9.5 4.8 6.5 4 3 4v14c3.5 0 6.5.8 9 3M12 7c2.5-2.2 5.5-3 9-3v14c-3.5 0-6.5.8-9 3" /></svg>
+);
 export const EyeOff = ({ size = 18 }: IconProps) => (
   <svg viewBox="0 0 24 24" {...svg(size)}>
     <path d="M3 12s3.3-6 9-6 9 6 9 6-3.3 6-9 6-9-6-9-6z" />
@@ -195,6 +201,45 @@ export function TopBar({
 /* Bottom sheet with scrim. Render inside <AnimatePresence>. */
 export function Sheet({ children, onClose, label }: { children: ReactNode; onClose?: () => void; label: string }) {
   const ok = useMotionSafe();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const previous = document.activeElement as HTMLElement | null;
+    const focusable = () => Array.from(dialog.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'));
+    (focusable()[0] ?? dialog).focus();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCloseRef.current?.();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const items = focusable();
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (!first || !last) {
+        event.preventDefault();
+        dialog.focus();
+      } else if (!dialog.contains(document.activeElement)) {
+        event.preventDefault();
+        first.focus();
+      } else if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      previous?.focus();
+    };
+  }, []);
   return (
     <>
       <motion.div
@@ -208,7 +253,10 @@ export function Sheet({ children, onClose, label }: { children: ReactNode; onClo
       <motion.div
         className="sheet"
         role="dialog"
+        aria-modal="true"
         aria-label={label}
+        tabIndex={-1}
+        ref={dialogRef}
         initial={ok ? { y: "100%" } : { opacity: 0 }}
         animate={ok ? { y: 0 } : { opacity: 1 }}
         exit={ok ? { y: "100%" } : { opacity: 0 }}

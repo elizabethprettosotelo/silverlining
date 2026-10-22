@@ -2,31 +2,41 @@
 
 import { AnimatePresence } from "motion/react";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
+import Account, { type KeptStory } from "./Account";
 import Compose, { type Post } from "./Compose";
+import Onboarding, { type UserProfile } from "./Onboarding";
+import ReaderFlow from "./ReaderFlow";
 import Reveal from "./Reveal";
-import { SAMPLE, TURNED } from "./data";
-import { LetGo, LockedHome, Midnight, Reader, Reading, TABS, ThatsToday, type Tab } from "./Screens";
+import { GOOD, SAMPLE, TURNED, type Comment } from "./data";
+import { LetGo, LockedHome, Midnight, Reading, TABS, ThatsToday, type Tab } from "./Screens";
 import { NavDir } from "./ui";
 
-type View = "locked" | "compose" | "letgo" | "reading" | "reader" | "today" | "midnight" | "reveal";
+type View = "onboarding" | "account" | "locked" | "compose" | "letgo" | "reading" | "reader" | "today" | "midnight" | "reveal";
 
 const DAYS = ["Wed, Oct 21", "Thu, Oct 22", "Fri, Oct 23"];
 
 const FALLBACK_POST: Post = { title: SAMPLE.title, a: SAMPLE.a, hinge: "And still…", b: SAMPLE.b, kind: "turned" };
 
 export default function App() {
-  const [view, setView] = useState<View>("locked");
+  const [view, setView] = useState<View>("onboarding");
   const [dir, setDir] = useState(1);
   const [tab, setTab] = useState<Tab>("turned");
   const [tabDir, setTabDir] = useState(1);
   const [day, setDay] = useState(0);
   const [post, setPost] = useState<Post | null>(null);
   const [readIdx, setReadIdx] = useState(0);
+  const [readerCategory, setReaderCategory] = useState<Tab>("turned");
   const [read, setRead] = useState<string[]>([]);
   const [roseGiven, setRoseGiven] = useState(false);
   const [theme, setTheme] = useState<"day" | "night">("day");
   const [demoSignal, setDemoSignal] = useState(0);
   const [composeKey, setComposeKey] = useState(0);
+  const [onboardingKey, setOnboardingKey] = useState(0);
+  const [accountReturn, setAccountReturn] = useState<View>("locked");
+  const [profile, setProfile] = useState<UserProfile>({ name: "quietharbor", initials: "JA", contact: "", notifications: false });
+  const [keptStories, setKeptStories] = useState<KeptStory[]>([]);
+  const [hiddenStoryIds, setHiddenStoryIds] = useState<string[]>([]);
+  const [commentsByStory, setCommentsByStory] = useState<Record<string, Comment[]>>({});
 
   // Night mode follows the clock by default, like the product would.
   useEffect(() => {
@@ -42,6 +52,10 @@ export default function App() {
     setDir(d);
     setView(v);
   }, []);
+  const openAccount = () => {
+    setAccountReturn(view === "account" ? "locked" : view);
+    go("account");
+  };
 
   const changeTab = (t: Tab) => {
     setTabDir(TABS.indexOf(t) >= TABS.indexOf(tab) ? 1 : -1);
@@ -52,9 +66,10 @@ export default function App() {
     go("reading", d);
   };
 
-  const openStory = (i: number) => {
+  const openStory = (i: number, category: Tab = "turned") => {
     setReadIdx(i);
-    setRead((r) => (r.includes(TURNED[i].id) ? r : [...r, TURNED[i].id]));
+    setReaderCategory(category);
+    if (category === "turned") setRead((r) => (r.includes(TURNED[i].id) ? r : [...r, TURNED[i].id]));
     go("reader");
   };
 
@@ -63,6 +78,8 @@ export default function App() {
     setReadIdx(0);
     setRead([]);
     setRoseGiven(false);
+    setHiddenStoryIds([]);
+    setCommentsByStory({});
     setTab("turned");
     setComposeKey((k) => k + 1);
     go("locked");
@@ -73,11 +90,37 @@ export default function App() {
   };
   const reset = () => {
     setDay(0);
+    setKeptStories([]);
+    setHiddenStoryIds([]);
+    setCommentsByStory({});
+    setProfile({ name: "quietharbor", initials: "JA", contact: "", notifications: false });
+    setOnboardingKey((key) => key + 1);
     clearDay();
+    go("onboarding");
+  };
+
+  const deleteLocalAccount = () => {
+    setDay(0);
+    setPost(null);
+    setReadIdx(0);
+    setRead([]);
+    setRoseGiven(false);
+    setKeptStories([]);
+    setCommentsByStory({});
+    setHiddenStoryIds([]);
+    setProfile({ name: "quietharbor", initials: "JA", contact: "", notifications: false });
+    setComposeKey((key) => key + 1);
+    setOnboardingKey((key) => key + 1);
+    go("onboarding");
   };
 
   const jump = (v: View, t?: Tab) => {
-    if (!post && v !== "locked" && v !== "compose") setPost(FALLBACK_POST);
+    if (v === "account") setAccountReturn(view);
+    if (v === "reader") {
+      setReadIdx(0);
+      setReaderCategory(t ?? "turned");
+    }
+    if (!post && v !== "locked" && v !== "compose" && v !== "account" && v !== "onboarding") setPost(FALLBACK_POST);
     if (v === "compose") setComposeKey((k) => k + 1);
     if (t) changeTab(t);
     go(v);
@@ -85,14 +128,21 @@ export default function App() {
 
   let screen: ReactNode = null;
   switch (view) {
+    case "onboarding":
+      screen = <Onboarding key={`onboarding-${onboardingKey}`} onComplete={(nextProfile) => { setProfile(nextProfile); go("locked"); }} />;
+      break;
+    case "account":
+      screen = <Account profile={profile} keptStories={keptStories} onClose={() => go(accountReturn, -1)} onProfileChange={setProfile} onDelete={deleteLocalAccount} />;
+      break;
     case "locked":
-      screen = <LockedHome key="locked" dateLabel={dateLabel} onWrite={() => go("compose")} />;
+      screen = <LockedHome key="locked" dateLabel={dateLabel} isNewDay={day > 0} onWrite={() => go("compose")} onMenu={openAccount} />;
       break;
     case "compose":
       screen = (
         <Compose
           key={`compose-${composeKey}`}
           dateLabel={dateLabel}
+          profile={profile}
           demoSignal={demoSignal}
           onBack={() => go("locked", -1)}
           onPosted={(np) => {
@@ -114,24 +164,45 @@ export default function App() {
           onTab={changeTab}
           post={p}
           roseGiven={roseGiven}
+          onGiveRose={() => setRoseGiven(true)}
+          profile={profile}
           read={read}
           onOpenStory={openStory}
+          onOpenGoodStory={(index) => openStory(index, "good")}
+          onMenu={openAccount}
+          hiddenStoryIds={hiddenStoryIds}
+          onReportStory={(id) => setHiddenStoryIds((ids) => ids.includes(id) ? ids : [...ids, id])}
+          commentsByStory={commentsByStory}
+          onAddComment={(id, comment) => setCommentsByStory((items) => ({ ...items, [id]: [...(items[id] ?? []), comment] }))}
         />
       );
       break;
     case "reader":
       screen = (
-        <Reader
+        <ReaderFlow
           key={`reader-${readIdx}`}
+          story={readerCategory === "good" ? GOOD[readIdx] : TURNED[readIdx]}
           index={readIdx}
+          total={readerCategory === "good" ? GOOD.length : TURNED.length}
+          profile={profile}
+          category={readerCategory}
           roseGiven={roseGiven}
+          comments={[
+            ...(commentsByStory[(readerCategory === "good" ? GOOD : TURNED)[readIdx].id] ?? []),
+            ...(readerCategory === "good" ? GOOD : TURNED)[readIdx].comments,
+          ]}
           onGiveRose={() => setRoseGiven(true)}
-          onBack={() => openReading("turned", -1)}
+          onAddComment={(id, comment) => setCommentsByStory((items) => ({ ...items, [id]: [...(items[id] ?? []), comment] }))}
+          onBack={() => openReading(readerCategory, -1)}
           onEnd={() => go("today")}
+          onReport={(id) => setHiddenStoryIds((ids) => ids.includes(id) ? ids : [...ids, id])}
           onNext={() => {
             const n = readIdx + 1;
-            if (n >= TURNED.length) go("today");
-            else openStory(n);
+            const total = readerCategory === "good" ? GOOD.length : TURNED.length;
+            if (n >= total) {
+              if (readerCategory === "turned") go("today");
+              else openReading(readerCategory, -1);
+            } else openStory(n, readerCategory);
           }}
         />
       );
@@ -143,7 +214,7 @@ export default function App() {
       screen = <Midnight key="midnight" onDone={() => go("reveal")} />;
       break;
     case "reveal":
-      screen = <Reveal key="reveal" post={p} dateLabel={DAYS[Math.max(0, day)]} onFinish={newDay} />;
+      screen = <Reveal key="reveal" post={p} dateLabel={DAYS[Math.min(day, DAYS.length - 1)]} onFinish={(kept) => { if (kept) setKeptStories((items) => [{ ...p, dateLabel }, ...items]); newDay(); }} />;
       break;
   }
 
@@ -189,15 +260,17 @@ export default function App() {
 
         <div className="group">
           <span className="label">Jump to</span>
-          <button aria-pressed={view === "locked"} onClick={() => jump("locked")}>1 · Locked home</button>
-          <button aria-pressed={view === "compose"} onClick={() => jump("compose")}>2 · Write</button>
-          <button aria-pressed={view === "letgo"} onClick={() => jump("letgo")}>3 · Let it go</button>
-          <button aria-pressed={view === "reading" && tab === "turned"} onClick={() => jump("reading", "turned")}>4 · Turned days</button>
-          <button aria-pressed={view === "reader"} onClick={() => jump("reader")}>5 · Story that turned</button>
-          <button aria-pressed={view === "reading" && tab === "vent"} onClick={() => jump("reading", "vent")}>6 · Vents</button>
-          <button aria-pressed={view === "reading" && tab === "good"} onClick={() => jump("reading", "good")}>7 · Good days</button>
-          <button aria-pressed={view === "today"} onClick={() => jump("today")}>8 · That&apos;s today</button>
-          <button aria-pressed={view === "reveal"} onClick={() => jump("reveal")}>9 · Next-day reveal</button>
+          <button aria-pressed={view === "onboarding"} onClick={() => jump("onboarding")}>Set up account</button>
+          <button aria-pressed={view === "locked"} onClick={() => jump("locked")}>Locked home</button>
+          <button aria-pressed={view === "compose"} onClick={() => jump("compose")}>Write</button>
+          <button aria-pressed={view === "letgo"} onClick={() => jump("letgo")}>Send it off</button>
+          <button aria-pressed={view === "reading" && tab === "turned"} onClick={() => jump("reading", "turned")}>Clearing up</button>
+          <button aria-pressed={view === "reader"} onClick={() => jump("reader")}>Clearing up story</button>
+          <button aria-pressed={view === "reading" && tab === "vent"} onClick={() => jump("reading", "vent")}>Rainy days</button>
+          <button aria-pressed={view === "reading" && tab === "good"} onClick={() => jump("reading", "good")}>Little wins</button>
+          <button aria-pressed={view === "today"} onClick={() => jump("today")}>That&apos;s today</button>
+          <button aria-pressed={view === "reveal"} onClick={() => jump("reveal")}>Morning replies</button>
+          <button aria-pressed={view === "account"} onClick={() => jump("account")}>Account menu</button>
         </div>
 
         <button onClick={reset}>Reset everything</button>

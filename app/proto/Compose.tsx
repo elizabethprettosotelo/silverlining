@@ -2,8 +2,9 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { HINGES, ME, PROMPTS, SAMPLE, findName, hasCrisis, hasSlur, redact } from "./data";
+import { HINGES, PROMPTS, SAMPLE, findName, hasCrisis, hasSlur, redact } from "./data";
 import { Author, Hand, Screen, Sheet, StoryText, TopBar, ease, useMotionSafe } from "./ui";
+import type { UserProfile } from "./Onboarding";
 
 export type Post = {
   title: string;
@@ -20,11 +21,13 @@ const MIN_CHARS = 80;
 
 export default function Compose({
   dateLabel,
+  profile,
   onBack,
   onPosted,
   demoSignal,
 }: {
   dateLabel: string;
+  profile: UserProfile;
   onBack: () => void;
   onPosted: (p: Post) => void;
   demoSignal: number;
@@ -160,23 +163,21 @@ export default function Compose({
       />
       <div className="screen-body" style={{ paddingTop: 4 }}>
         <div style={{ marginBottom: 18 }}>
-          <Author name={ME.name} initials={ME.initials} size={26} />
+          <Author name={profile.name} initials={profile.initials} size={26} />
         </div>
 
-        {/* Prompt: loud before you start, quiet once you're writing. */}
         <motion.div layout="position" style={{ marginBottom: 18 }}>
           {a.length === 0 && phase === "write" ? (
-            <div className="stack" style={{ gap: 8 }}>
-              <span className="t-eyebrow">Today&apos;s question</span>
-              <span className="t-title-sm" style={{ fontFamily: "var(--app)", fontWeight: 700, fontSize: 20, lineHeight: "27px" }}>
+            <div className="row" style={{ gap: 12, alignItems: "flex-start" }}>
+              <span className="t-comment muted grow" style={{ fontStyle: "italic" }}>
                 {PROMPTS[promptIdx]}
               </span>
-              <button className="link" onClick={() => setPromptIdx((promptIdx + 1) % PROMPTS.length)}>
-                Different question
+              <button className="iconbtn" style={{ marginLeft: 0, flex: "0 0 44px" }} aria-label="Different question" title="Different question" onClick={() => setPromptIdx((promptIdx + 1) % PROMPTS.length)}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5" /><path d="M5.5 9a7 7 0 0112-2L20 9M4 15l2.5 2a7 7 0 0012-2" /></svg>
               </button>
             </div>
           ) : (
-            <span className="t-story muted" style={{ fontSize: 17, lineHeight: "25px" }}>
+            <span className="t-story muted" style={{ fontSize: 17, lineHeight: "25px", fontStyle: "italic" }}>
               {PROMPTS[promptIdx]}
             </span>
           )}
@@ -238,7 +239,7 @@ export default function Compose({
                   className="t-story hinge"
                   role="button"
                   tabIndex={0}
-                  title="Change how it turns"
+                  title="Change the flip side"
                   onClick={() => setHingeIdx((hingeIdx + 1) % HINGES.length)}
                   onKeyDown={(e) => e.key === "Enter" && setHingeIdx((hingeIdx + 1) % HINGES.length)}
                   style={{ position: "absolute", left: 0, top: 0, cursor: "pointer", whiteSpace: "nowrap" }}
@@ -256,7 +257,7 @@ export default function Compose({
                   rows={2}
                   value={b}
                   onChange={(e) => setB(e.target.value)}
-                  aria-label={`Continue after ${hinge}`}
+                  aria-label={`Continue on the flip side after ${hinge}`}
                 />
               </div>
 
@@ -270,7 +271,7 @@ export default function Compose({
                     transition={{ duration: 0.25 }}
                     style={{ marginTop: 18 }}
                   >
-                    <span className="t-eyebrow">Start with</span>
+                    <span className="t-eyebrow">Add a flip side</span>
                     <div className="row" style={{ flexWrap: "wrap", gap: 8, marginTop: 10 }}>
                       {HINGES.map((h, i) => (
                         <motion.button
@@ -299,7 +300,7 @@ export default function Compose({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                   >
-                    Tap “{hinge}” to change how it turns
+                    Tap “{hinge}” to change the flip side
                   </motion.p>
                 )}
               </AnimatePresence>
@@ -313,7 +314,15 @@ export default function Compose({
         {phase === "write" ? (
           <>
             <div className="row" style={{ gap: 12, marginBottom: 4 }}>
-              <div className="progress grow" aria-hidden>
+              <div
+                className="progress grow"
+                role="progressbar"
+                aria-label="Minimum story length"
+                aria-valuemin={0}
+                aria-valuemax={MIN_CHARS}
+                aria-valuenow={Math.min(a.trim().length, MIN_CHARS)}
+                aria-valuetext={`${Math.min(a.trim().length, MIN_CHARS)} of ${MIN_CHARS} characters`}
+              >
                 <motion.div animate={{ width: `${Math.max(4, progress * 100)}%` }} transition={{ duration: 0.3, ease }} />
               </div>
             </div>
@@ -325,10 +334,10 @@ export default function Compose({
         ) : (
           <div className="row">
             <button className="btn btn-secondary grow" onClick={() => setSheet("class")}>
-              Leave it there
+              Leave it as is
             </button>
             <button className="btn btn-primary grow" disabled={!b.trim()} onClick={() => finish("turned")}>
-              Let it go
+              Send it off
             </button>
           </div>
         )}
@@ -341,19 +350,19 @@ export default function Compose({
               <span className="t-title">How was today, overall?</span>
               <span className="t-caption">So your story reaches people who are ready for it.</span>
             </div>
-            <div className="row" style={{ alignItems: "stretch" }}>
-              <button className="card card-ink grow" style={{ textAlign: "left", cursor: "pointer", border: 0 }} onClick={() => finish("vent")}>
-                <span className="t-title-sm" style={{ display: "block" }}>It was a hard day</span>
+            <div className="stack" style={{ gap: 10 }}>
+              <button className="card category-choice category-good" style={{ width: "100%", textAlign: "left", cursor: "pointer", background: "var(--ground-good)" }} onClick={() => finish("good")}>
+                <span className="t-title-sm" style={{ display: "block" }}>A little win</span>
+                <span className="t-caption" style={{ display: "block", marginTop: 6 }}>Shared with the little wins.</span>
+              </button>
+              <button className="card category-choice category-vent" style={{ width: "100%", textAlign: "left", cursor: "pointer", background: "var(--ground-vent)" }} onClick={() => finish("vent")}>
+                <span className="t-title-sm" style={{ display: "block" }}>A rainy day</span>
                 <span className="t-caption" style={{ display: "block", marginTop: 6 }}>
-                  Shared as a vent. Readers are asked to write back with care.
+                  Shared with rainy days. Readers write back with care.
                 </span>
               </button>
-              <button className="card card-good grow" style={{ textAlign: "left", cursor: "pointer" }} onClick={() => finish("good")}>
-                <span className="t-title-sm" style={{ display: "block" }}>It was a good day</span>
-                <span className="t-caption" style={{ display: "block", marginTop: 6 }}>Shared with the good days.</span>
-              </button>
             </div>
-            <button className="link" onClick={() => setSheet(null)}>Back to my story</button>
+            <button className="link center" onClick={() => setSheet(null)}>Back to story</button>
           </Sheet>
         )}
 

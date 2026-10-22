@@ -3,7 +3,8 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState, type ReactNode } from "react";
 import type { Post } from "./Compose";
-import { GOOD, ME, TURNED, VENTS, isLowEffort, isUnkind, type Comment, type Story } from "./data";
+import type { UserProfile } from "./Onboarding";
+import { GOOD, ME, TURNED, VENTS, isLowEffort, type Comment } from "./data";
 import {
   Author,
   Avatar,
@@ -14,7 +15,6 @@ import {
   Rose,
   Screen,
   Sheet,
-  StoryText,
   Sun,
   TopBar,
   ease,
@@ -23,6 +23,7 @@ import {
   useMotionSafe,
 } from "./ui";
 import Scene from "./Scene";
+import StoryDetail from "./StoryDetail";
 
 /* ------------------------------------------------------------------ */
 /* Mood tab bar: good days · turned days · vents                       */
@@ -35,9 +36,9 @@ const TAB_STEP = 66; // button width + gap
 export function TabBar({ current, onChange }: { current: Tab; onChange: (t: Tab) => void }) {
   const ok = useMotionSafe();
   const items: { t: Tab; label: string; icon: ReactNode }[] = [
-    { t: "good", label: "Good days", icon: <Sun /> },
-    { t: "turned", label: "Turned days", icon: <CloudSun /> },
-    { t: "vent", label: "Vents", icon: <Rain /> },
+    { t: "good", label: "Little wins", icon: <Sun /> },
+    { t: "turned", label: "Clearing up", icon: <CloudSun /> },
+    { t: "vent", label: "Rainy days", icon: <Rain /> },
   ];
   return (
     <motion.div
@@ -71,33 +72,34 @@ export function TabBar({ current, onChange }: { current: Tab; onChange: (t: Tab)
 /* ------------------------------------------------------------------ */
 /* HM-01 · Locked home                                                 */
 /* ------------------------------------------------------------------ */
-export function LockedHome({ onWrite, dateLabel }: { onWrite: () => void; dateLabel: string }) {
-  const ok = useMotionSafe();
-  const titles = ["The group project", "Burnt the rice twice", "First day back"];
+export function LockedHome({ onWrite, onMenu, dateLabel, isNewDay }: { onWrite: () => void; onMenu: () => void; dateLabel: string; isNewDay: boolean }) {
   return (
     <Screen ground="g-turned">
       <Scene mood="turned" height={240} />
-      <div style={{ height: 150, padding: "18px 24px 0" }}>
-        <span className="t-eyebrow">{dateLabel}</span>
+      <div className="row" style={{ height: 150, padding: "18px 24px 0", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <span className="row t-eyebrow" style={{ gap: 6 }}>{isNewDay && <Sun size={15} aria-hidden />} {dateLabel}</span>
+        <button className="link" style={{ padding: "0 0 8px" }} onClick={onMenu}>Menu</button>
       </div>
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <div className="screen-body" style={{ paddingTop: 28 }}>
           <h1 className="t-display" style={{ margin: "0 0 18px" }}>Today</h1>
-          {titles.map((t, i) => (
-            <motion.div
-              key={t}
-              className="row"
-              style={{ justifyContent: "space-between", padding: "14px 0", borderBottom: "1px solid var(--line-hairline)" }}
-              initial={ok ? { opacity: 0, y: 6 } : false}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 + i * 0.08, duration: 0.4, ease }}
-            >
-              <span className="t-title-sm muted">{t}</span>
-              <span className="muted"><Lock /></span>
-            </motion.div>
-          ))}
-          <p className="t-body" style={{ margin: "32px 0 6px" }}>Other people wrote about their day.</p>
-          <p className="t-body muted" style={{ margin: 0 }}>Write yours to read theirs.</p>
+          <div aria-hidden="true" style={{ filter: "blur(3px)", opacity: 0.68, pointerEvents: "none", userSelect: "none" }}>
+            <div className="stack" style={{ gap: 12 }}>
+              {TURNED.map((story) => (
+                <article key={story.id} className="card card-soft">
+                  <span className="t-title-sm">{story.title}</span>
+                  <p className="t-story clamp-3 muted" style={{ margin: "8px 0 0", fontSize: 16, lineHeight: "24px" }}>{story.a}</p>
+                  <p className="t-story" style={{ margin: "8px 0 0", fontSize: 16, lineHeight: "24px" }}><span className="hinge">{story.hinge}</span> <span className="turned">{story.b}</span></p>
+                  <div className="row" style={{ justifyContent: "space-between", marginTop: 12 }}><span className="t-byline">{story.name}</span><span className="t-eyebrow">Clearing up</span></div>
+                </article>
+              ))}
+            </div>
+          </div>
+          <div className="card card-sunken locked-message" style={{ position: "relative", marginTop: -34, textAlign: "center" }}>
+            <p className="t-body" style={{ margin: 0 }}>Everyone else already wrote.</p>
+            <p className="t-body muted" style={{ margin: "6px 0 0" }}>Your turn.</p>
+            <Lock size={18} />
+          </div>
         </div>
         <div className="screen-foot">
           <button className="btn btn-primary btn-full" onClick={onWrite}>Write today&apos;s story</button>
@@ -121,10 +123,10 @@ export function LetGo({ post, onDone }: { post: Post; onDone: () => void }) {
       return () => clearTimeout(t);
     }
     const ts = [
-      setTimeout(() => setPhase(1), 1000),
-      setTimeout(() => setPhase(2), 1700),
-      setTimeout(() => setPhase(3), 2350),
-      setTimeout(onDone, 4300),
+      setTimeout(() => setPhase(1), 450),
+      setTimeout(() => setPhase(2), 850),
+      setTimeout(() => setPhase(3), 1200),
+      setTimeout(onDone, 2450),
     ];
     return () => ts.forEach(clearTimeout);
   }, [onDone, ok]);
@@ -181,7 +183,7 @@ export function LetGo({ post, onDone }: { post: Post; onDone: () => void }) {
               {post.hinge ? (
                 <div className="hinge" style={{ fontSize: 15, marginTop: 4 }}>{post.hinge}</div>
               ) : (
-                <div className="t-caption" style={{ marginTop: 4 }}>{post.kind === "good" ? "A good day" : "Left as it was"}</div>
+                <div className="t-caption" style={{ marginTop: 4 }}>{post.kind === "good" ? "A little win" : "Left as it was"}</div>
               )}
             </motion.div>
 
@@ -223,9 +225,9 @@ export function LetGo({ post, onDone }: { post: Post; onDone: () => void }) {
         animate={flying || !ok ? { opacity: 1, x: 0 } : { opacity: 0, x: ok ? 28 : 0 }}
         transition={{ delay: flying ? 0.5 : 0, duration: 0.6, ease }}
       >
-        <h1 className="t-display" style={{ margin: "0 0 10px" }}>There it goes.</h1>
+        <h1 className="t-display" style={{ margin: "0 0 10px" }}>Off it goes.</h1>
         <p className="t-caption" style={{ margin: 0, fontSize: 15, lineHeight: "22px" }}>
-          It&apos;s out there until midnight. Now see how other people&apos;s days went.
+          It&apos;s out there till midnight.
         </p>
       </motion.div>
     </Screen>
@@ -253,16 +255,32 @@ export function Reading({
   onTab,
   post,
   roseGiven,
+  onGiveRose,
+  profile,
   read,
   onOpenStory,
+  onOpenGoodStory,
+  onMenu,
+  hiddenStoryIds,
+  onReportStory,
+  commentsByStory,
+  onAddComment,
 }: {
   tab: Tab;
   dir: number;
   onTab: (t: Tab) => void;
   post: Post;
   roseGiven: boolean;
+  onGiveRose: (id: string) => void;
+  profile: UserProfile;
   read: string[];
   onOpenStory: (index: number) => void;
+  onOpenGoodStory: (index: number) => void;
+  onMenu: () => void;
+  hiddenStoryIds: string[];
+  onReportStory: (id: string) => void;
+  commentsByStory: Record<string, Comment[]>;
+  onAddComment: (id: string, comment: Comment) => void;
 }) {
   const ok = useMotionSafe();
   const [immersive, setImmersive] = useState(false);
@@ -279,11 +297,12 @@ export function Reading({
           exit="pExit"
           transition={{ duration: ok ? 0.42 : 0.01, ease }}
         >
-          {tab === "good" && <GoodPane />}
-          {tab === "turned" && <TurnedPane post={post} roseGiven={roseGiven} read={read} onOpen={onOpenStory} />}
-          {tab === "vent" && <VentPane onLeave={() => onTab("turned")} onImmersive={setImmersive} />}
+          {tab === "good" && <GoodPane onOpen={onOpenGoodStory} hiddenStoryIds={hiddenStoryIds} />}
+          {tab === "turned" && <TurnedPane post={post} roseGiven={roseGiven} read={read} onOpen={onOpenStory} hiddenStoryIds={hiddenStoryIds} />}
+          {tab === "vent" && <VentPane onLeave={() => onTab("turned")} onImmersive={setImmersive} hiddenStoryIds={hiddenStoryIds} onReport={onReportStory} roseGiven={roseGiven} onGiveRose={onGiveRose} profile={profile} commentsByStory={commentsByStory} onAddComment={onAddComment} />}
         </motion.div>
       </AnimatePresence>
+      <button className="link" style={{ position: "absolute", top: 54, right: 24, zIndex: 21 }} onClick={onMenu}>Menu</button>
       <AnimatePresence>{!immersive && <TabBar key="tabs" current={tab} onChange={onTab} />}</AnimatePresence>
     </Screen>
   );
@@ -301,21 +320,31 @@ function PaneEnd({ title, sub }: { title: string; sub: ReactNode }) {
 /* ------------------------------------------------------------------ */
 /* Turned days (the default view)                                      */
 /* ------------------------------------------------------------------ */
-function TurnedPane({ post, roseGiven, read, onOpen }: { post: Post; roseGiven: boolean; read: string[]; onOpen: (i: number) => void }) {
+function TurnedPane({ post, roseGiven, read, onOpen, hiddenStoryIds }: { post: Post; roseGiven: boolean; read: string[]; onOpen: (i: number) => void; hiddenStoryIds: string[] }) {
   const ok = useMotionSafe();
+  const stories = TURNED.map((story, index) => ({ story, index })).filter(({ story }) => !hiddenStoryIds.includes(story.id));
   return (
     <>
       <Scene mood="turned" height={210} />
       <div className="screen-body" style={{ paddingTop: 122 }}>
-        <h1 className="t-display" style={{ margin: "0 0 6px" }}>Turned days</h1>
+        <h1 className="t-display" style={{ margin: "0 0 6px" }}>Clearing up</h1>
         <p className="t-caption" style={{ margin: "0 0 18px" }}>
-          “{post.title}” is out there until 11:59 PM.
+          <strong><em>“{post.title}”</em></strong> is out there until 11:59 PM.
         </p>
         <div className="stack" style={{ gap: 14 }}>
-          {TURNED.map((s, i) => {
+          {stories.map(({ story: s, index: i }) => {
             const done = read.includes(s.id);
             return (
-              <motion.button key={s.id} className="card card-soft card-tap" onClick={() => onOpen(i)} whileTap={{ scale: 0.985 }} {...cardIn(ok, i)}>
+              <motion.article
+                key={s.id}
+                className="card card-soft card-tap"
+                role="button"
+                tabIndex={0}
+                onClick={() => onOpen(i)}
+                onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onOpen(i))}
+                whileTap={{ scale: 0.985 }}
+                {...cardIn(ok, i)}
+              >
                 <div className="t-title-sm" style={{ marginBottom: 8 }}>{s.title}</div>
                 <p className="t-story clamp-3 muted" style={{ margin: 0, fontSize: 17, lineHeight: "26px" }}>{s.a}</p>
                 <p className="t-story" style={{ margin: "8px 0 0", fontSize: 17, lineHeight: "26px" }}>
@@ -327,19 +356,20 @@ function TurnedPane({ post, roseGiven, read, onOpen }: { post: Post; roseGiven: 
                     <span className="t-byline" style={{ fontSize: 13 }}>{s.name}</span>
                   </div>
                   <span className="t-eyebrow" style={{ fontSize: 11, color: done ? "var(--text-ghost)" : "var(--mood-turned)" }}>
-                    {done ? "Read" : "A day that turned"}
+                    {done ? "Read" : "Clearing up"}
                   </span>
                 </div>
-              </motion.button>
+              </motion.article>
             );
           })}
+          {stories.length === 0 && <p className="t-caption">You’ve hidden all of these stories for now.</p>}
         </div>
         <PaneEnd
-          title="That's every day that turned so far"
+          title="That's everyone for today."
           sub={
             roseGiven ? (
               <span className="row" style={{ gap: 6, justifyContent: "center" }}>
-                <span className="turned"><Rose filled size={14} /></span> You gave today&apos;s rose
+                <span className="turned"><Rose filled size={14} /></span> You gave today&apos;s nod
               </span>
             ) : (
               "Everything here is gone at midnight."
@@ -354,16 +384,17 @@ function TurnedPane({ post, roseGiven, read, onOpen }: { post: Post; roseGiven: 
 /* ------------------------------------------------------------------ */
 /* RD-04 · Good days                                                   */
 /* ------------------------------------------------------------------ */
-function GoodPane() {
+function GoodPane({ onOpen, hiddenStoryIds }: { onOpen: (index: number) => void; hiddenStoryIds: string[] }) {
   const ok = useMotionSafe();
+  const stories = GOOD.map((story, index) => ({ story, index })).filter(({ story }) => !hiddenStoryIds.includes(story.id));
   return (
     <>
       <Scene mood="good" height={210} />
       <div className="screen-body" style={{ paddingTop: 122 }}>
-        <h1 className="t-display" style={{ margin: "0 0 18px" }}>Good days</h1>
+        <h1 className="t-display" style={{ margin: "0 0 18px" }}>Little wins</h1>
         <div className="stack" style={{ gap: 14 }}>
-          {GOOD.map((s, i) => (
-            <motion.article key={s.id} className="card card-soft" {...cardIn(ok, i)}>
+          {stories.map(({ story: s, index: i }) => (
+            <motion.button key={s.id} className="card card-soft card-tap" onClick={() => onOpen(i)} {...cardIn(ok, i)}>
               <div className="t-title-sm" style={{ marginBottom: 8 }}>{s.title}</div>
               <p className="t-story" style={{ margin: 0, fontSize: 17, lineHeight: "26px" }}>{s.a}</p>
               <div className="row" style={{ justifyContent: "space-between", marginTop: 14 }}>
@@ -371,12 +402,13 @@ function GoodPane() {
                   <Avatar initials={s.initials} size={22} />
                   <span className="t-byline" style={{ fontSize: 13 }}>{s.name}</span>
                 </div>
-                <span className="t-eyebrow" style={{ fontSize: 11, color: "var(--mood-good)" }}>A good day</span>
+                <span className="t-eyebrow" style={{ fontSize: 11, color: "var(--mood-good)" }}>A little win</span>
               </div>
-            </motion.article>
+            </motion.button>
           ))}
+          {stories.length === 0 && <p className="t-caption">No wins yet. Give it a few hours.</p>}
         </div>
-        <PaneEnd title="That's every good day so far" sub="More may come in before midnight." />
+        <PaneEnd title="That's every little win so far." sub="More may come in before midnight." />
       </div>
     </>
   );
@@ -385,18 +417,19 @@ function GoodPane() {
 /* ------------------------------------------------------------------ */
 /* VT-01..04 · Vents                                                   */
 /* ------------------------------------------------------------------ */
-type VentStage = "care" | "vent" | "responses" | "done";
+type VentStage = "care" | "vent" | "done";
 const ventSlide = slide(70, ["vEnter", "vCenter", "vExit"]);
 
-function VentPane({ onLeave, onImmersive }: { onLeave: () => void; onImmersive: (on: boolean) => void }) {
+function VentPane({ onLeave, onImmersive, hiddenStoryIds, onReport, roseGiven, onGiveRose, profile, commentsByStory, onAddComment }: { onLeave: () => void; onImmersive: (on: boolean) => void; hiddenStoryIds: string[]; onReport: (id: string) => void; roseGiven: boolean; onGiveRose: (id: string) => void; profile: UserProfile; commentsByStory: Record<string, Comment[]>; onAddComment: (id: string, comment: Comment) => void }) {
   const ok = useMotionSafe();
   const [stage, setStage] = useState<VentStage>("care");
   const [vdir, setVdir] = useState(1);
-  const [idx, setIdx] = useState(0);
-  const [reply, setReply] = useState("");
+  const [idx, setIdx] = useState(() => Math.max(0, VENTS.findIndex((item) => !hiddenStoryIds.includes(item.id))));
   const [nudges, setNudges] = useState(0);
-  const [nudge, setNudge] = useState(false);
+  const [careRose, setCareRose] = useState(false);
   const vent = VENTS[idx];
+  const availableVents = VENTS.filter((item) => !hiddenStoryIds.includes(item.id));
+  const nextAvailableIndex = VENTS.findIndex((item, index) => index > idx && !hiddenStoryIds.includes(item.id));
 
   const to = (s: VentStage, d = 1) => {
     setVdir(d);
@@ -411,14 +444,23 @@ function VentPane({ onLeave, onImmersive }: { onLeave: () => void; onImmersive: 
   useEffect(() => onImmersive(stage !== "care"), [stage, onImmersive]);
   useEffect(() => () => onImmersive(false), [onImmersive]);
 
-  const send = () => {
-    if (isLowEffort(reply) && nudges < 2) {
-      setNudge(true);
-      setNudges(nudges + 1);
-      return;
+  if (availableVents.length === 0 && stage === "care") {
+    return <Screen ground="g-vent"><div className="screen-body" style={{ display: "grid", placeItems: "center", textAlign: "center" }}><p className="t-body muted">No rainy days are waiting right now.</p></div><div className="screen-foot"><button className="btn btn-primary btn-full" onClick={leave}>Back to today</button></div></Screen>;
+  }
+
+  const nextVent = () => {
+    setNudges(0);
+    if (nextAvailableIndex >= 0) {
+      setIdx(nextAvailableIndex);
+      to("vent");
+    } else to("done");
+  };
+  const validateReply = (text: string) => {
+    if (isLowEffort(text) && nudges < 2) {
+      setNudges((count) => count + 1);
+      return "Say a bit more? One sentence about a time you felt this way means a lot to them.";
     }
-    setNudge(false);
-    to("responses");
+    return null;
   };
 
   let body: ReactNode;
@@ -427,11 +469,20 @@ function VentPane({ onLeave, onImmersive }: { onLeave: () => void; onImmersive: 
       <>
         <Scene mood="vent" height={320} />
         <div className="screen-body" style={{ paddingTop: 252 }}>
-          <span className="t-eyebrow" style={{ color: "var(--mood-vent)" }}>Before you open a vent</span>
+          <span className="t-eyebrow" style={{ color: "var(--mood-vent)" }}>Before you read a rainy day</span>
           <h1 className="t-display" style={{ margin: "14px 0 16px" }}>This is someone&apos;s real day.</h1>
           <p className="t-story" style={{ margin: 0, color: "var(--text-muted)" }}>
-            They didn&apos;t find a bright side, and they&apos;re not asking you to. You don&apos;t have to fix it. Just let them know someone read it.
+            This one&apos;s a rough day. You don&apos;t have to fix it. Just let them know someone read it.
           </p>
+          <article className="card card-soft story-vent" style={{ marginTop: 20, padding: 18, background: "var(--ground-vent)" }}>
+            <div className="row" style={{ gap: 8, marginBottom: 10 }}><Avatar initials={vent.initials} size={24} /><span className="t-byline">{vent.name}</span></div>
+            <h2 className="t-title-sm" style={{ margin: "0 0 8px" }}>{vent.title}</h2>
+            <p className="t-comment clamp-3" style={{ margin: 0 }}>{vent.a}</p>
+            <div className="row story-actions" style={{ minHeight: 56, gap: 12, marginTop: 10, padding: "8px 0", borderBottom: "1px solid var(--line-hairline)" }}>
+              <button className="rose-action" style={{ appearance: "none", width: 44, height: 44, flex: "0 0 44px", display: "grid", placeItems: "center", padding: 0, border: `1.5px solid ${roseGiven ? "var(--line-hairline)" : "var(--turn-accent)"}`, borderRadius: "50%", background: roseGiven ? "var(--surface-sunken)" : "var(--turn-wash)", color: roseGiven ? "var(--text-muted)" : "var(--turn-accent)", cursor: roseGiven ? "default" : "pointer" }} aria-label={roseGiven ? "You have given today's nod" : "Give a nod"} disabled={roseGiven} onClick={() => setCareRose(true)}><Rose filled={roseGiven} /></button>
+              <button className="story-comment-jump" onClick={() => to("vent")}>Comments</button>
+            </div>
+          </article>
         </div>
         <div className="screen-foot" style={{ paddingBottom: 110 }}>
           <div className="row">
@@ -439,6 +490,9 @@ function VentPane({ onLeave, onImmersive }: { onLeave: () => void; onImmersive: 
             <button className="btn btn-primary grow" onClick={() => to("vent")}>I&apos;m ready</button>
           </div>
         </div>
+        <AnimatePresence>
+          {careRose && <Sheet label="Give your nod" onClose={() => setCareRose(false)}><div className="sheet-centered" style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", gap: 16, textAlign: "center" }}><span className="t-title">Give your nod today to this story?</span><span className="t-caption">You get one a day. They’ll see it tomorrow, with no name attached.</span><button className="btn btn-accent" onClick={() => { onGiveRose(vent.id); setCareRose(false); }}><Rose filled /> Give a nod</button><button className="link center" onClick={() => setCareRose(false)}>Save it for another story</button></div></Sheet>}
+        </AnimatePresence>
       </>
     );
   } else if (stage === "done") {
@@ -452,8 +506,8 @@ function VentPane({ onLeave, onImmersive }: { onLeave: () => void; onImmersive: 
                 <motion.span key={i} style={{ width: 12, height: 12, borderRadius: 6, background: "var(--text-ink)" }} initial={ok ? { scale: 0 } : false} animate={{ scale: 1 }} transition={{ delay: 0.25 + 0.1 * i, type: "spring", stiffness: 400, damping: 18 }} />
               ))}
             </div>
-            <h1 className="t-display" style={{ margin: "0 0 12px" }}>You&apos;ve heard everyone who needed it today.</h1>
-            <p className="t-body muted" style={{ margin: 0 }}>Every vent so far has someone&apos;s words waiting for it. Thank you for being one of them.</p>
+            <h1 className="t-display" style={{ margin: "0 0 12px" }}>Everyone who needed a reply got one.</h1>
+            <p className="t-body muted" style={{ margin: 0 }}>Thanks for being there.</p>
           </div>
         </div>
         <div className="screen-foot">
@@ -461,79 +515,24 @@ function VentPane({ onLeave, onImmersive }: { onLeave: () => void; onImmersive: 
         </div>
       </>
     );
-  } else if (stage === "responses") {
-    body = (
-      <>
-        <TopBar onBack={leave} icon="close" title={<span className="t-title-sm">{vent.title}</span>} />
-        <div className="screen-body">
-          <div className="card card-soft" style={{ boxShadow: "inset 0 0 0 1.5px var(--turn-accent)" }}>
-            <span className="t-eyebrow" style={{ color: "var(--turn-accent)" }}>You wrote</span>
-            <p className="t-comment" style={{ margin: "8px 0 0" }}>{reply}</p>
-          </div>
-          <p className="t-caption" style={{ margin: "18px 0 10px" }}>Others wrote, in no particular order</p>
-          <div className="stack" style={{ gap: 12 }}>
-            {vent.comments.map((c, i) => (
-              <CommentCard key={c.name} c={c} delay={0.2 + i * 0.1} />
-            ))}
-          </div>
-        </div>
-        <div className="screen-foot">
-          <span className="t-caption" style={{ textAlign: "center" }}>
-            {idx < VENTS.length - 1 ? "Someone else is waiting to be heard." : "That was the last one waiting."}
-          </span>
-          <div className="row">
-            <button className="btn btn-secondary grow" onClick={leave}>Stop here</button>
-            <button
-              className="btn btn-primary grow"
-              onClick={() => {
-                setReply("");
-                setNudges(0);
-                if (idx < VENTS.length - 1) {
-                  setIdx(idx + 1);
-                  to("vent");
-                } else to("done");
-              }}
-            >
-              Hear another
-            </button>
-          </div>
-        </div>
-      </>
-    );
   } else {
     body = (
-      <>
-        <TopBar onBack={() => to("care", -1)} title={<span className="t-eyebrow" style={{ color: "var(--mood-vent)" }}>A vent</span>} />
-        <div className="screen-body">
-          <Author name={vent.name} initials={vent.initials} sub="earlier today" />
-          <h1 className="t-title" style={{ margin: "18px 0 12px" }}>{vent.title}</h1>
-          <StoryText a={vent.a} />
-        </div>
-        <div className="g-surface" style={{ borderRadius: "22px 22px 0 0", padding: "16px 20px 34px", display: "flex", flexDirection: "column", gap: 10 }}>
-          <span className="t-byline" style={{ fontSize: 13 }}>Write back to {vent.name}</span>
-          <textarea
-            className="textarea-box"
-            style={{ minHeight: 90 }}
-            value={reply}
-            onChange={(e) => {
-              setReply(e.target.value);
-              setNudge(false);
-            }}
-            placeholder="Have you ever felt like this? Tell them."
-          />
-          <AnimatePresence>
-            {nudge && (
-              <motion.div className="banner banner-held" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
-                Say a bit more? One sentence about a time you felt this way means a lot to them.
-              </motion.div>
-            )}
-          </AnimatePresence>
-          <div className="row" style={{ justifyContent: "space-between" }}>
-            <button className="link" onClick={() => to("care", -1)}>Not this one</button>
-            <button className="btn btn-primary" disabled={!reply.trim()} onClick={send}>Send</button>
-          </div>
-        </div>
-      </>
+      <StoryDetail
+        story={vent}
+        category="vent"
+        profileName={profile.name}
+        profileInitials={profile.initials}
+        roseGiven={roseGiven}
+        onGiveRose={() => onGiveRose(vent.id)}
+        onBack={() => to("care", -1)}
+        onNext={nextVent}
+        nextLabel="Next"
+        onBreak={leave}
+        comments={[...(commentsByStory[vent.id] ?? []), ...vent.comments]}
+        onAddComment={(comment) => onAddComment(vent.id, comment)}
+        onReport={() => onReport(vent.id)}
+        validateComment={validateReply}
+      />
     );
   }
 
@@ -557,181 +556,6 @@ function VentPane({ onLeave, onImmersive }: { onLeave: () => void; onImmersive: 
 
 
 /* ------------------------------------------------------------------ */
-/* RD-01..05 · Reading a story that turned                             */
-/* ------------------------------------------------------------------ */
-export function Reader({
-  index,
-  roseGiven,
-  onGiveRose,
-  onNext,
-  onBack,
-  onEnd,
-}: {
-  index: number;
-  roseGiven: boolean;
-  onGiveRose: (id: string) => void;
-  onNext: () => void;
-  onBack: () => void;
-  onEnd: () => void;
-}) {
-  const story = TURNED[index];
-  const [sheet, setSheet] = useState<null | "rose" | "break" | "write" | "reread">(null);
-  const [comment, setComment] = useState("");
-  const [sent, setSent] = useState<string | null>(null);
-  const [rosedThis, setRosedThis] = useState(false);
-
-  if (sent) {
-    return <Comments story={story} mine={sent} onBack={() => setSent(null)} onNext={onNext} last={index === TURNED.length - 1} />;
-  }
-
-  const send = (force = false) => {
-    if (!force && isUnkind(comment)) {
-      setSheet("reread");
-      return;
-    }
-    setSheet(null);
-    setSent(comment.trim());
-  };
-
-  return (
-    <Screen ground="g-turned">
-      <TopBar
-        onBack={onBack}
-        right={<button className="link" style={{ fontSize: 14 }} onClick={() => setSheet("break")}>I need a break</button>}
-      />
-      <div className="screen-body">
-        <div className="dots" style={{ margin: "4px 0 22px" }} aria-label={`Story ${index + 1} of ${TURNED.length}`}>
-          {TURNED.map((s, i) => (
-            <span key={s.id} className={`dot ${i === index ? "on" : i < index ? "done" : ""}`} />
-          ))}
-        </div>
-        <Author name={story.name} initials={story.initials} sub="earlier today" />
-        <h1 className="t-title" style={{ margin: "18px 0 12px" }}>{story.title}</h1>
-        <StoryText a={story.a} hinge={story.hinge} b={story.b} animateTurn key={story.id} />
-        <div style={{ marginTop: 22 }}>
-          {rosedThis ? (
-            <span className="row turned t-label" style={{ gap: 8 }}>
-              <Rose filled /> You gave this story your rose
-            </span>
-          ) : roseGiven ? (
-            <span className="t-caption">You&apos;ve given today&apos;s rose.</span>
-          ) : (
-            <button className="btn btn-accent btn-sm" onClick={() => setSheet("rose")}>
-              <Rose /> Give a rose
-            </button>
-          )}
-        </div>
-        <div style={{ height: 24 }} />
-      </div>
-      <div className="screen-foot">
-        <div className="row">
-          <button className="btn btn-secondary grow" onClick={() => setSheet("write")}>Write back</button>
-          <button className="btn btn-primary grow" onClick={onNext}>Next</button>
-        </div>
-      </div>
-
-      <AnimatePresence>
-        {sheet === "rose" && (
-          <Sheet key="rose" label="Give your rose" onClose={() => setSheet(null)}>
-            <span className="t-title">Give your one rose today to this story?</span>
-            <span className="t-caption" style={{ fontSize: 14 }}>You get one a day. They&apos;ll find it tomorrow, with no name attached.</span>
-            <button
-              className="btn btn-accent"
-              style={{ alignSelf: "flex-start" }}
-              onClick={() => {
-                onGiveRose(story.id);
-                setRosedThis(true);
-                setSheet(null);
-              }}
-            >
-              <Rose filled /> Give my rose
-            </button>
-            <button className="link" onClick={() => setSheet(null)}>Save it for another story</button>
-          </Sheet>
-        )}
-        {sheet === "break" && (
-          <Sheet key="break" label="Take a break" onClose={() => setSheet(null)}>
-            <span className="t-title">Stopping here is fine</span>
-            <span className="t-caption" style={{ fontSize: 14 }}>
-              Other people&apos;s days can be a lot. Your stories aren&apos;t going anywhere until midnight.
-            </span>
-            <button className="btn btn-primary" style={{ alignSelf: "flex-start" }} onClick={onEnd}>End for today</button>
-            <a className="btn btn-secondary" style={{ alignSelf: "flex-start" }} href="tel:988">Get support now</a>
-            <button className="link" onClick={() => setSheet(null)}>Keep reading</button>
-          </Sheet>
-        )}
-        {sheet === "write" && (
-          <Sheet key="write" label={`Write back to ${story.name}`} onClose={() => setSheet(null)}>
-            <span className="t-byline">Write back to {story.name}</span>
-            <textarea
-              className="textarea-box"
-              autoFocus
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              placeholder="Talk to the person, not just the problem."
-            />
-            <div className="row" style={{ justifyContent: "space-between" }}>
-              <button className="link" onClick={() => setSheet(null)}>Not now</button>
-              <button className="btn btn-primary" disabled={!comment.trim()} onClick={() => send()}>Send</button>
-            </div>
-          </Sheet>
-        )}
-        {sheet === "reread" && (
-          <Sheet key="reread" label="Reread before sending" onClose={() => setSheet("write")}>
-            <span className="t-title">This might land harder than you mean it to</span>
-            <span className="t-caption" style={{ fontSize: 14 }}>They shared something real. Try writing back to how they felt, not what they should have done.</span>
-            <button className="btn btn-primary btn-full" onClick={() => setSheet("write")}>Reread it</button>
-            <button className="link center" onClick={() => send(true)}>Send anyway</button>
-          </Sheet>
-        )}
-      </AnimatePresence>
-    </Screen>
-  );
-}
-
-/* RD-03 · Comments unlock after you write back */
-function Comments({ story, mine, onBack, onNext, last }: { story: Story; mine: string; onBack: () => void; onNext: () => void; last: boolean }) {
-  const ok = useMotionSafe();
-  return (
-    <Screen ground="g-turned">
-      <TopBar onBack={onBack} />
-      <div className="screen-body">
-        <h1 className="t-title-sm" style={{ margin: "0 0 14px" }}>{story.title}</h1>
-        <motion.div className="card card-ink" layout initial={ok ? { opacity: 0, y: 10 } : false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease }}>
-          <span className="t-eyebrow">You wrote</span>
-          <p className="t-comment" style={{ margin: "8px 0 0" }}>{mine}</p>
-        </motion.div>
-        <p className="t-caption" style={{ margin: "18px 0 10px" }}>Others wrote, in no particular order</p>
-        <div className="stack" style={{ gap: 12 }}>
-          {story.comments.map((c, i) => (
-            <CommentCard key={c.name} c={c} delay={0.25 + i * 0.12} />
-          ))}
-        </div>
-        <div style={{ height: 24 }} />
-      </div>
-      <div className="screen-foot">
-        <button className="btn btn-primary" style={{ alignSelf: "flex-start" }} onClick={onNext}>
-          {last ? "That's the last one" : "Next story"}
-        </button>
-      </div>
-    </Screen>
-  );
-}
-
-function CommentCard({ c, delay = 0 }: { c: Comment; delay?: number }) {
-  const ok = useMotionSafe();
-  return (
-    <motion.div className="card" initial={ok ? { opacity: 0, y: 10 } : false} animate={{ opacity: 1, y: 0 }} transition={{ delay, duration: 0.4, ease }}>
-      <div className="row" style={{ gap: 8, marginBottom: 8 }}>
-        <Avatar initials={c.initials} size={22} />
-        <span className="t-byline" style={{ fontSize: 13 }}>{c.name}</span>
-      </div>
-      <p className="t-comment" style={{ margin: 0 }}>{c.text}</p>
-    </motion.div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
 /* HM-04 · That's today                                                */
 /* ------------------------------------------------------------------ */
 export function ThatsToday({ post, onDone, onGood }: { post: Post; onDone: () => void; onGood: () => void }) {
@@ -742,26 +566,17 @@ export function ThatsToday({ post, onDone, onGood }: { post: Post; onDone: () =>
       <div style={{ height: 230, flexShrink: 0 }} />
       <div className="screen-body" style={{ display: "grid", placeItems: "center", textAlign: "center" }}>
         <div>
-          <motion.div
-            className="muted"
-            style={{ display: "inline-block" }}
-            initial={ok ? { opacity: 0, rotate: -40, scale: 0.8 } : false}
-            animate={{ opacity: 1, rotate: 0, scale: 1 }}
-            transition={{ duration: 1.1, ease }}
-          >
-            <Moon size={30} />
-          </motion.div>
-          <motion.h1 className="t-display" style={{ margin: "14px 0 12px", fontSize: 36, lineHeight: "42px" }} initial={ok ? { opacity: 0, y: 8 } : false} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.6, ease }}>
-            That&apos;s today.
+          <motion.h1 className="t-display" style={{ margin: "0 0 12px", fontSize: 36, lineHeight: "42px" }} initial={ok ? { opacity: 0, y: 8 } : false} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6, ease }}>
+            That&apos;s a wrap on today.
           </motion.h1>
           <motion.p className="t-body muted" style={{ margin: 0 }} initial={ok ? { opacity: 0 } : false} animate={{ opacity: 1 }} transition={{ delay: 0.7, duration: 0.6 }}>
-            “{post.title}” is out there until 11:59 PM. Next time you open the app, you&apos;ll see what it started.
+            “{post.title}” is out there until 11:59 PM.<br />Morning. People wrote back.
           </motion.p>
         </div>
       </div>
       <div className="screen-foot">
         <button className="btn btn-primary btn-full" onClick={onDone}>Done for today</button>
-        <button className="link center" onClick={onGood}>Read the good days</button>
+        <button className="link center" onClick={onGood}>Read the little wins</button>
       </div>
     </Screen>
   );
@@ -782,10 +597,10 @@ export function Midnight({ onDone }: { onDone: () => void }) {
             <Moon size={34} />
           </motion.div>
           <motion.p className="t-story" style={{ margin: "16px 0 0", color: "#ececf5" }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6, duration: 0.8 }}>
-            Midnight. Everything from today is gone.
+            Midnight. Clean slate.
           </motion.p>
           <motion.p className="t-caption" style={{ margin: "8px 0 0", color: "#aeb0c7" }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.3, duration: 0.8 }}>
-            The next morning…
+            Morning. People wrote back.
           </motion.p>
         </div>
       </div>

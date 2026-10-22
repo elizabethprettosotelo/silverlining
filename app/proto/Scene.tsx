@@ -114,9 +114,6 @@ function useScrollPan(ref: RefObject<HTMLDivElement | null>) {
     const update = () => {
       raf = 0;
       screen.style.setProperty("--sy", String(Math.min(body.scrollTop, 900)));
-      const max = body.scrollHeight - body.clientHeight;
-      // 0 → 1 as you near the bottom: the foreground rises into place.
-      screen.style.setProperty("--end", String(max > 0 ? Math.min(1, body.scrollTop / Math.max(1, max)) : 1));
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(update);
@@ -482,14 +479,14 @@ export function SceneFoot({ mood, time = "day" }: { mood: Mood; time?: "day" | "
 
         <g mask={`url(#${id("mask")})`} stroke={ink} fill="none" strokeLinecap="round">
           {/* far bank: grass, moves least */}
-          <g className="foot-layer" style={{ ["--lift" as string]: "30px" }} opacity={0.32} strokeWidth={0.6}>
+          <g className="foot-layer" opacity={0.32} strokeWidth={0.6}>
             {art.grass.map((d, i) => (
               <path key={i} d={d} />
             ))}
           </g>
 
           {/* the pond */}
-          <g className="foot-layer" style={{ ["--lift" as string]: "50px" }}>
+          <g className="foot-layer">
             <ellipse cx={pond.cx} cy={pond.cy} rx={pond.rx + 3} ry={pond.ry + 2} fill={ground} stroke="none" />
             <ellipse cx={pond.cx} cy={pond.cy} rx={pond.rx} ry={pond.ry} strokeWidth={1.1} opacity={0.7} />
             <g clipPath={`url(#${id("pond")})`}>
@@ -513,7 +510,7 @@ export function SceneFoot({ mood, time = "day" }: { mood: Mood; time?: "day" | "
           </g>
 
           {/* rocks and reeds in front, move most */}
-          <g className="foot-layer" style={{ ["--lift" as string]: "84px" }}>
+          <g className="foot-layer">
             {art.rocks.map((r) => (
               <g key={r.k}>
                 <path d={r.shape} fill={ground} strokeWidth={1.1} opacity={0.85} />

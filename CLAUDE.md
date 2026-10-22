@@ -7,14 +7,14 @@ Read this before you change anything. It's the context from the design work that
 ## What this is
 A coded, clickable prototype of **silver lining**, made for a design competition (theme: storytelling, judged on product thinking, depth/communication, and craft). It gets screen-recorded for a ≤7-minute video, so polish and motion matter more than real backend logic. **There is no backend.** All data is hardcoded in `app/proto/data.ts`.
 
-**The product:** an anti-audience, anti-performance daily storytelling app for overthinkers and quiet sufferers in their late teens and twenties. You write one titled story a day under a pen name. You can optionally add a "turn" (a hinge word such as "And still…" plus a second part, so the story reads 1a → 1b in the same box). People read a few stories, give one rose a day, and write back. You only see responses the next day, after midnight.
+**The product:** an anti-audience, anti-performance daily storytelling app for overthinkers and quiet sufferers in their late teens and twenties. You write one titled story a day under a pen name. You can optionally add a "flip side" (a hinge word such as "And still…" plus a second part, so the story reads 1a → 1b in the same box). People read a few stories, give one nod a day, and write back. You only see responses the next day, after midnight. Stories you keep go in your shoebox.
 
 ## Product rules (don't break these)
 - **No counts anywhere.** No likes, follower numbers, view counts or streaks. Progress dots for the reading cap are the only "numbers."
-- **The accent color (`--turn-accent`) is used only for the turn**: the hinge word, the 1b text, the rose, and selected chips. Don't use it for generic buttons.
-- **Reading is capped.** Stories that turned: about 5 in the product (3 in the demo). Vents: one at a time, and you unlock the next by writing back. Good days: uncapped.
-- **One rose per day.**
-- **Responses are revealed after midnight**, one at a time, and the writer privately tags each one Helped / Didn't land / Unkind.
+- **The accent color (`--turn-accent`) is used only for the flip side**: the hinge word, the 1b text, the nod, and selected chips. Don't use it for generic buttons.
+- **Reading is capped.** Clearing up stories: about 5 in the product (3 in the demo). Rainy days: one at a time, and you unlock the next by writing back. Little wins: uncapped.
+- **One nod per day.**
+- **Responses are revealed after midnight**, one at a time, and the writer privately tags each one This helped / Not for me / That stung.
 - **Honest empty states.** Never fake activity.
 - **Safety:** first names get redacted to "[someone]", slurs are blocked, unkind replies trigger a reread pause, and crisis language sends you to a care screen (988) before posting.
 - **Tone:** quiet, warm, plain. Copy is in sentence case, with no exclamation marks and no growth-hacky nudges.

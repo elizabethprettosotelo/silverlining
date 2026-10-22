@@ -296,6 +296,13 @@ body {
 .btn[disabled] { background: var(--action-disabled); color: var(--action-on-disabled); box-shadow: none; cursor: not-allowed; transform: none; }
 .btn-sm { min-height: 40px; padding: 0 18px; font-size: 15px; }
 
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid var(--turn-accent);
+  outline-offset: 3px;
+}
+
 .link {
   appearance: none;
   background: none;
@@ -369,6 +376,12 @@ body {
   resize: none;
   padding: 0;
 }
+.field:focus-visible,
+.textarea-box:focus-visible {
+  outline: 2px solid var(--turn-accent);
+  outline-offset: 4px;
+}
+.title-field:focus-within { border-bottom-color: var(--turn-accent); }
 .field::placeholder { color: var(--text-ghost); }
 .field.t-title::placeholder { font-weight: 500; }
 .title-field {
@@ -430,6 +443,75 @@ body {
     0 16px 32px -16px rgba(17, 18, 32, 0.34);
 }
 .card-tap:focus-visible { outline: 2px solid var(--text-ink); outline-offset: 3px; }
+.story-detail-body { padding-top: 4px; }
+.story-detail-card { padding: 20px; }
+.story-vent { background: var(--ground-vent); }
+.story-good { background: var(--ground-good); }
+.story-turned { background: var(--surface-default); }
+.story-actions { min-height: 56px; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line-hairline); }
+.rose-action {
+  appearance: none;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1.5px solid var(--turn-accent);
+  border-radius: 50%;
+  background: var(--turn-wash);
+  color: var(--turn-accent);
+  cursor: pointer;
+}
+.rose-action:disabled { border-color: var(--line-hairline); background: var(--surface-sunken); color: var(--text-muted); cursor: default; }
+.rose-action:focus-visible,
+.story-comment-jump:focus-visible { outline: 2px solid var(--turn-accent); outline-offset: 3px; }
+.story-comment-jump {
+  appearance: none;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.story-comment-jump:hover { background: var(--action-press-wash); }
+.story-comments { display: grid; gap: 10px; padding: 16px 0 24px; scroll-margin-top: 12px; }
+.story-comment-card { padding: 14px; }
+.sheet-centered { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; }
+.category-choice { width: 100%; text-align: left; cursor: pointer; transition: box-shadow 0.15s ease, transform 0.1s ease; }
+.category-choice:active { transform: scale(0.99); }
+.category-good { background: var(--ground-good); color: var(--text-ink); }
+.category-vent { background: var(--ground-vent); color: var(--text-ink); }
+.category-turned { background: var(--ground-turned); color: var(--text-ink); }
+.writer-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 6px; margin-top: 16px; }
+.writer-option { appearance: none; min-width: 0; min-height: 96px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 6px 3px; border: 1.5px solid transparent; border-radius: var(--r-md); background: transparent; color: var(--text-ink); cursor: pointer; }
+.writer-option[aria-pressed="true"] { border-color: var(--turn-accent); background: var(--turn-wash); }
+.writer-option .t-caption { text-align: center; line-height: 15px; }
+.onboarding-progress { height: 4px; margin: 2px 0 18px; overflow: hidden; border-radius: 2px; background: var(--line-hairline); }
+.onboarding-progress > div { height: 100%; border-radius: inherit; background: var(--turn-accent); }
+.onboarding-examples { display: grid; gap: 10px; margin-top: 16px; }
+.example-turned { min-height: 186px; }
+.example-small-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.example-small { min-height: 142px; padding: 14px; }
+.example-small .t-comment { font-size: 15px; line-height: 21px; }
+.day-timeline { position: relative; display: grid; gap: 18px; margin: 24px 0; padding: 0; list-style: none; }
+.day-timeline::before { content: ""; position: absolute; top: 22px; bottom: 22px; left: 20px; width: 1px; background: var(--line-hairline); }
+.timeline-step { position: relative; display: grid; grid-template-columns: 42px minmax(0, 1fr); align-items: center; gap: 12px; min-height: 48px; }
+.timeline-icon { z-index: 1; width: 42px; height: 42px; display: grid; place-items: center; border: 1px solid var(--line-hairline); border-radius: 50%; background: var(--surface-default); color: var(--text-ink); }
+.entry-decision-body { justify-content: center; }
+.entry-decision-content { width: 100%; max-width: 100%; margin: auto; text-align: center; }
+.entry-preview { text-align: left; }
+.reaction-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.reaction-options > .t-caption { grid-column: 1 / -1; }
+.reaction-option { min-width: 0; min-height: 58px; justify-content: center; gap: 5px; padding: 6px 4px; font-size: 12px; line-height: 15px; }
+.reaction-option .radio { width: 14px; height: 14px; }
 .clamp-3 {
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -614,6 +696,7 @@ body {
   line-height: 26px;
 }
 .textarea-box:focus { box-shadow: inset 0 0 0 1.5px var(--text-ink); }
+.textarea-box:focus-visible { box-shadow: inset 0 0 0 1.5px var(--turn-accent); }
 .textarea-box::placeholder { color: var(--text-ghost); }
 
 /* Dev panel (desktop only, outside the phone) */
@@ -698,9 +781,6 @@ body {
   pointer-events: none;
 }
 .scene-foot svg { display: block; overflow: visible; }
-/* Each layer starts a little low and rises as you scroll toward the end;
-   nearer layers (bigger --k) travel further. --end is 0..1 from Scene.tsx. */
-.foot-layer { transform: translateY(calc((1 - var(--end, 1)) * var(--lift, 30px))); }
 .foot-ripple { animation: foot-ripple 6s ease-in-out infinite alternate; }
 .foot-reeds { transform-box: fill-box; transform-origin: bottom; animation: foot-sway 5s ease-in-out infinite alternate; }
 .foot-rainring { transform-box: fill-box; transform-origin: center; animation: foot-ring 2.7s ease-out infinite; opacity: 0; }
@@ -710,7 +790,6 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .foot-ripple, .foot-reeds, .foot-rainring { animation: none; }
   .foot-rainring { opacity: 0.4; }
-  .foot-layer { transform: none; }
 }
 /* ------------------------------------------------------------------ */
 /* Let it go: the envelope                                             */

@@ -14,9 +14,9 @@ export type Story = {
 };
 
 export const PROMPTS = [
-  "What's one thing from today you can't stop thinking about?",
-  "What happened today that you haven't told anyone?",
-  "What's something small that stuck with you today?",
+  "So, how'd today go?",
+  "So, how'd today go? What stayed with you?",
+  "So, how'd today go? What are you still thinking about?",
 ];
 
 export const HINGES = ["And still…", "Even so…", "Right now…", "One small thing…", "Tomorrow…", "But…"];
