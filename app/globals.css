@@ -645,3 +645,29 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .scene-rays, .scene-drift-a, .scene-drift-b, .scene-rain, .scene-twinkle { animation: none; }
 }
+
+/* Scene foot: pond, rocks and reeds along the bottom, behind content. */
+.scene-foot {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.scene-foot svg { display: block; overflow: visible; }
+/* Each layer starts a little low and rises as you scroll toward the end;
+   nearer layers (bigger --k) travel further. --end is 0..1 from Scene.tsx. */
+.foot-layer { transform: translateY(calc((1 - var(--end, 1)) * var(--lift, 30px))); }
+.foot-ripple { animation: foot-ripple 6s ease-in-out infinite alternate; }
+.foot-reeds { transform-box: fill-box; transform-origin: bottom; animation: foot-sway 5s ease-in-out infinite alternate; }
+.foot-rainring { transform-box: fill-box; transform-origin: center; animation: foot-ring 2.7s ease-out infinite; opacity: 0; }
+@keyframes foot-ripple { from { transform: translateX(-4px); } to { transform: translateX(4px); } }
+@keyframes foot-sway { from { transform: skewX(-2deg); } to { transform: skewX(2.5deg); } }
+@keyframes foot-ring { 0% { transform: scale(0.2); opacity: 0.7; } 100% { transform: scale(1.6); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .foot-ripple, .foot-reeds, .foot-rainring { animation: none; }
+  .foot-rainring { opacity: 0.4; }
+  .foot-layer { transform: none; }
+}

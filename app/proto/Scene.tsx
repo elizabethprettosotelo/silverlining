@@ -12,7 +12,7 @@
  * The art is generated (seeded, so the server and client render the same lines).
  */
 
-import { useId, useMemo } from "react";
+import { useEffect, useId, useMemo, useRef, type RefObject } from "react";
 
 export type Mood = "turned" | "good" | "vent";
 
@@ -62,7 +62,7 @@ function polyline(fn: Ridge, step = 5, x0 = -10, x1 = W + 10) {
 type Hill = { fill: string; lines: string[]; ridge: string; gap: number; opacity: number };
 
 function hill(ridge: Ridge, h: number, gap: number, opacity: number, wobble: number): Hill {
-  const fill = `${polyline(ridge)}L${W + 10} ${h + 10}L-10 ${h + 10}Z`;
+  const fill = `${polyline(ridge)}L${W + 10} ${h + 420}L-10 ${h + 420}Z`;
   const lines: string[] = [];
   // Contour lines that follow the ridge, loosening as they go down: the woodcut look.
   for (let i = 1; i < 40; i++) {
@@ -97,8 +97,43 @@ function cloud(cx: number, cy: number, w: number, seed: number, shade: number): 
   return { circles, hatch, shade };
 }
 
+/* ---------- scroll panning ----------
+ * The screen's scroll position is written to --sy on the .screen element, and
+ * each layer moves by a different fraction of it, so the landscape pans with
+ * the page (far layers slower, near layers faster). Off for reduced motion.
+ */
+const pan = (k: number) => ({ transform: `translateY(calc(var(--sy, 0) * ${-k}px))` });
+
+function useScrollPan(ref: RefObject<HTMLDivElement | null>) {
+  useEffect(() => {
+    const screen = ref.current?.closest(".screen") as HTMLElement | null;
+    const body = screen?.querySelector(".screen-body") as HTMLElement | null;
+    if (!screen || !body) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      screen.style.setProperty("--sy", String(Math.min(body.scrollTop, 900)));
+      const max = body.scrollHeight - body.clientHeight;
+      // 0 → 1 as you near the bottom: the foreground rises into place.
+      screen.style.setProperty("--end", String(max > 0 ? Math.min(1, body.scrollTop / Math.max(1, max)) : 1));
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(update);
+    };
+    update();
+    body.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      body.removeEventListener("scroll", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [ref]);
+}
+
 /* ---------- the scene ---------- */
-export default function Scene({ mood, height: h, time = "day" }: Props) {
+export default function Scene({ mood, height: h, time = "day", foot = true }: Props & { foot?: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useScrollPan(ref);
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const id = (s: string) => `sc-${uid}-${s}`;
   const ink = INK[mood];
@@ -197,7 +232,8 @@ export default function Scene({ mood, height: h, time = "day" }: Props) {
   const showMoon = time === "dusk";
 
   return (
-    <div className="scene" aria-hidden style={{ height: h }}>
+    <>
+    <div className="scene" aria-hidden style={{ height: h }} ref={ref}>
       <svg width="100%" height={h} viewBox={`0 0 ${W} ${h}`} preserveAspectRatio="xMidYMax slice">
         <defs>
           <linearGradient id={id("plate")} x1="0" y1="0" x2="0" y2={h} gradientUnits="userSpaceOnUse">
@@ -231,13 +267,14 @@ export default function Scene({ mood, height: h, time = "day" }: Props) {
 
         <g mask={`url(#${id("mask")})`} stroke={ink} fill="none" strokeLinecap="round">
           {/* sky hatch */}
-          <g opacity={0.22} strokeWidth={0.6}>
+          <g opacity={0.22} strokeWidth={0.6} style={pan(0.1)}>
             {art.sky.map((d, i) => (
               <path key={i} d={d} />
             ))}
           </g>
 
           {/* stars */}
+          <g style={pan(0.12)}>
           {art.stars.map(([x, y, s], i) => (
             <path
               key={i}
@@ -248,7 +285,9 @@ export default function Scene({ mood, height: h, time = "day" }: Props) {
               opacity={0.7}
             />
           ))}
+          </g>
 
+          <g style={pan(0.2)}>
           {/* sun: rays, then a plate-colored disk that cuts the sky lines, then rings */}
           {showSun && (
             <>
@@ -281,6 +320,9 @@ export default function Scene({ mood, height: h, time = "day" }: Props) {
             ))}
           </g>
 
+          </g>
+
+          <g style={pan(0.3)}>
           {/* rain sits behind the clouds and hills */}
           {art.rain.length > 0 && (
             <g className="scene-rain" opacity={0.45} strokeWidth={0.8}>
@@ -307,9 +349,11 @@ export default function Scene({ mood, height: h, time = "day" }: Props) {
             </g>
           ))}
 
+          </g>
+
           {/* hills, far to near; each one hides what's behind it */}
           {art.hills.map((hl, i) => (
-            <g key={i}>
+            <g key={i} style={pan([0.42, 0.58, 0.76][i])}>
               <path d={hl.fill} fill={plate} stroke="none" />
               <g clipPath={`url(#${id(`hill${i}`)})`} opacity={hl.opacity} strokeWidth={0.75}>
                 {hl.lines.map((d, k) => (
@@ -319,6 +363,179 @@ export default function Scene({ mood, height: h, time = "day" }: Props) {
               <path d={hl.ridge} strokeWidth={1.1} opacity={Math.min(1, hl.opacity + 0.15)} />
             </g>
           ))}
+        </g>
+      </svg>
+    </div>
+    {foot && <SceneFoot mood={mood} time={time} />}
+    </>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Scene foot: a pond, rocks and reeds along the bottom of the screen.  */
+/* Same engraved line, same mood color. It sits low and rises as you   */
+/* scroll toward the end of the page, so the landscape reads as one.   */
+/* ------------------------------------------------------------------ */
+const FH = 270;
+
+export function SceneFoot({ mood, time = "day" }: { mood: Mood; time?: "day" | "dusk" }) {
+  const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
+  const id = (s: string) => `sf-${uid}-${s}`;
+  const ink = INK[mood];
+  const ground = GROUND[mood];
+
+  const art = useMemo(() => {
+    const rand = rng(mood === "turned" ? 101 : mood === "good" ? 202 : 303);
+
+    // Pond: a wide ellipse, low and a little right of center.
+    const pond = { cx: W * 0.55, cy: FH * 0.5, rx: W * 0.4, ry: FH * 0.12 };
+    const ripples: string[] = [];
+    for (let y = pond.cy - pond.ry + 4; y < pond.cy + pond.ry; y += 3.6) {
+      // broken strokes, like an engraver's water
+      let x = pond.cx - pond.rx;
+      while (x < pond.cx + pond.rx) {
+        const len = 10 + rand() * 34;
+        ripples.push(`M${r1(x)} ${r1(y)}h${r1(len)}`);
+        x += len + 4 + rand() * 10;
+      }
+    }
+    // Light on the water: a stack of short bright gaps under where the sun/moon would be.
+    const glint: string[] = [];
+    if (mood !== "vent") {
+      for (let i = 0; i < 6; i++) {
+        const y = pond.cy - pond.ry * 0.55 + i * 5;
+        const half = 22 - i * 3;
+        glint.push(`M${r1(pond.cx + 30 - half)} ${r1(y)}h${r1(half * 2)}`);
+      }
+    }
+
+    // Rocks: rounded blobs with an outline and hatching on the shaded side.
+    const rockAt: [number, number, number, number][] =
+      mood === "vent"
+        ? [[W * 0.1, FH * 0.6, 56, 38], [W * 0.27, FH * 0.66, 34, 22], [W * 0.93, FH * 0.62, 60, 40], [W * 0.78, FH * 0.68, 28, 17]]
+        : [[W * 0.1, FH * 0.6, 54, 36], [W * 0.27, FH * 0.66, 30, 19], [W * 0.92, FH * 0.63, 50, 33]];
+    const rocks = rockAt.map(([cx, cy, w, hgt], k) => {
+      const pts: string[] = [];
+      const n = 14;
+      for (let i = 0; i <= n; i++) {
+        const a = Math.PI + (i / n) * Math.PI; // top half
+        const wob = 1 + (rand() - 0.5) * 0.18;
+        pts.push(`${i ? "L" : "M"}${r1(cx + Math.cos(a) * w * wob)} ${r1(cy + Math.sin(a) * hgt * wob)}`);
+      }
+      const shape = pts.join("") + `L${r1(cx + w)} ${r1(cy + 6)}L${r1(cx - w)} ${r1(cy + 6)}Z`;
+      const hatch: string[] = [];
+      // shade the right-hand side (light comes from the upper left of the sky)
+      for (let x = cx - w * 0.1; x < cx + w + 8; x += 3) hatch.push(`M${r1(x)} ${r1(cy - hgt - 4)}l${r1(-12)} ${r1(hgt + 14)}`);
+      // a few contour strokes across the face
+      const contours = [0.35, 0.65].map((t) => `M${r1(cx - w * 0.7)} ${r1(cy - hgt * t)}q${r1(w * 0.7)} ${r1(-hgt * 0.25)} ${r1(w * 1.3)} ${r1(hgt * 0.1)}`);
+      return { shape, hatch, contours, k };
+    });
+
+    // Reeds: tall curved strokes in clumps at the pond's edges.
+    const reeds: string[] = [];
+    const clumps = mood === "good" ? [W * 0.22, W * 0.97] : [W * 0.2, W * 0.98];
+    for (const cx of clumps) {
+      for (let i = 0; i < 9; i++) {
+        const x = cx + (rand() - 0.5) * 26;
+        const hgt = 60 + rand() * 70;
+        const lean = (rand() - 0.5) * 22;
+        reeds.push(`M${r1(x)} ${r1(FH * 0.68)}q${r1(lean * 0.2)} ${r1(-hgt * 0.6)} ${r1(lean)} ${r1(-hgt)}`);
+      }
+    }
+
+    // Grass ground lines across the very bottom.
+    const grass: string[] = [];
+    for (let y = FH - 4; y > FH * 0.6; y -= 4.5) {
+      let x = -10;
+      while (x < W + 10) {
+        const len = 18 + rand() * 40;
+        grass.push(`M${r1(x)} ${r1(y + (rand() - 0.5) * 2)}h${r1(len)}`);
+        x += len + 6 + rand() * 16;
+      }
+    }
+
+    // Rain rings on the pond (vent)
+    const rings: [number, number, number][] = [];
+    if (mood === "vent") {
+      for (let i = 0; i < 6; i++) rings.push([r1(pond.cx - pond.rx * 0.7 + rand() * pond.rx * 1.4), r1(pond.cy - pond.ry * 0.4 + rand() * pond.ry * 0.9), i]);
+    }
+
+    return { pond, ripples, glint, rocks, reeds, grass, rings };
+  }, [mood]);
+
+  const { pond } = art;
+  return (
+    <div className="scene-foot" aria-hidden style={{ height: FH }}>
+      <svg width="100%" height={FH} viewBox={`0 0 ${W} ${FH}`} preserveAspectRatio="xMidYMax slice">
+        <defs>
+          <linearGradient id={id("fade")} x1="0" y1="0" x2="0" y2={FH} gradientUnits="userSpaceOnUse">
+            <stop offset="0" stopColor="#000" />
+            <stop offset="0.3" stopColor="#fff" />
+          </linearGradient>
+          <mask id={id("mask")} maskUnits="userSpaceOnUse" x="0" y="-200" width={W} height={FH + 400}>
+            <rect y="-200" width={W} height={FH + 400} fill={`url(#${id("fade")})`} />
+          </mask>
+          <clipPath id={id("pond")}>
+            <ellipse cx={pond.cx} cy={pond.cy} rx={pond.rx} ry={pond.ry} />
+          </clipPath>
+        </defs>
+
+        <g mask={`url(#${id("mask")})`} stroke={ink} fill="none" strokeLinecap="round">
+          {/* far bank: grass, moves least */}
+          <g className="foot-layer" style={{ ["--lift" as string]: "30px" }} opacity={0.32} strokeWidth={0.6}>
+            {art.grass.map((d, i) => (
+              <path key={i} d={d} />
+            ))}
+          </g>
+
+          {/* the pond */}
+          <g className="foot-layer" style={{ ["--lift" as string]: "50px" }}>
+            <ellipse cx={pond.cx} cy={pond.cy} rx={pond.rx + 3} ry={pond.ry + 2} fill={ground} stroke="none" />
+            <ellipse cx={pond.cx} cy={pond.cy} rx={pond.rx} ry={pond.ry} strokeWidth={1.1} opacity={0.7} />
+            <g clipPath={`url(#${id("pond")})`}>
+              <g className="foot-ripple" opacity={0.42} strokeWidth={0.7}>
+                {art.ripples.map((d, i) => (
+                  <path key={i} d={d} />
+                ))}
+              </g>
+              {art.glint.length > 0 && (
+                <g stroke={ground} strokeWidth={2.6} opacity={1}>
+                  {art.glint.map((d, i) => (
+                    <path key={i} d={d} />
+                  ))}
+                </g>
+              )}
+              {art.rings.map(([x, y, i]) => (
+                <ellipse key={i} className="foot-rainring" style={{ animationDelay: `${i * 0.45}s` }} cx={x} cy={y} rx={10} ry={3} strokeWidth={0.8} />
+              ))}
+            </g>
+            {time === "dusk" && <ellipse cx={pond.cx + 30} cy={pond.cy - pond.ry * 0.35} rx={7} ry={2.2} strokeWidth={0.8} opacity={0.6} />}
+          </g>
+
+          {/* rocks and reeds in front, move most */}
+          <g className="foot-layer" style={{ ["--lift" as string]: "84px" }}>
+            {art.rocks.map((r) => (
+              <g key={r.k}>
+                <path d={r.shape} fill={ground} strokeWidth={1.1} opacity={0.85} />
+                <clipPath id={id(`rock${r.k}`)}>
+                  <path d={r.shape} />
+                </clipPath>
+                <g clipPath={`url(#${id(`rock${r.k}`)})`} opacity={0.45} strokeWidth={0.6}>
+                  {r.hatch.map((d, i) => (
+                    <path key={i} d={d} />
+                  ))}
+                  {r.contours.map((d, i) => (
+                    <path key={`c${i}`} d={d} />
+                  ))}
+                </g>
+              </g>
+            ))}
+            <g className="foot-reeds" opacity={0.6} strokeWidth={0.9}>
+              {art.reeds.map((d, i) => (
+                <path key={i} d={d} />
+              ))}
+            </g>
+          </g>
         </g>
       </svg>
     </div>
