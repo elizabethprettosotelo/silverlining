@@ -23,6 +23,7 @@ import {
   useMotionSafe,
 } from "./ui";
 import Scene from "./Scene";
+import RoseTakeover from "./RoseTakeover";
 import StoryDetail from "./StoryDetail";
 
 /* ------------------------------------------------------------------ */
@@ -427,6 +428,7 @@ function VentPane({ onLeave, onImmersive, hiddenStoryIds, onReport, roseGiven, o
   const [idx, setIdx] = useState(() => Math.max(0, VENTS.findIndex((item) => !hiddenStoryIds.includes(item.id))));
   const [nudges, setNudges] = useState(0);
   const [careRose, setCareRose] = useState(false);
+  const [showCareRoseAnimation, setShowCareRoseAnimation] = useState(false);
   const vent = VENTS[idx];
   const availableVents = VENTS.filter((item) => !hiddenStoryIds.includes(item.id));
   const nextAvailableIndex = VENTS.findIndex((item, index) => index > idx && !hiddenStoryIds.includes(item.id));
@@ -491,7 +493,7 @@ function VentPane({ onLeave, onImmersive, hiddenStoryIds, onReport, roseGiven, o
           </div>
         </div>
         <AnimatePresence>
-          {careRose && <Sheet label="Give your nod" onClose={() => setCareRose(false)}><div className="sheet-centered" style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", gap: 16, textAlign: "center" }}><span className="t-title">Give your nod today to this story?</span><span className="t-caption">You get one a day. They’ll see it tomorrow, with no name attached.</span><button className="btn btn-accent" onClick={() => { onGiveRose(vent.id); setCareRose(false); }}><Rose filled /> Give a nod</button><button className="link center" onClick={() => setCareRose(false)}>Save it for another story</button></div></Sheet>}
+          {careRose && <Sheet label="Give your nod" onClose={() => setCareRose(false)}><div className="sheet-centered" style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", gap: 16, textAlign: "center" }}><span className="t-title">Give your nod today to this story?</span><span className="t-caption">You get one a day. They’ll see it tomorrow, with no name attached.</span><button className="btn btn-accent" onClick={() => { onGiveRose(vent.id); setCareRose(false); setShowCareRoseAnimation(true); }}><Rose filled /> Give a nod</button><button className="link center" onClick={() => setCareRose(false)}>Save it for another story</button></div></Sheet>}
         </AnimatePresence>
       </>
     );
@@ -549,13 +551,13 @@ function VentPane({ onLeave, onImmersive, hiddenStoryIds, onReport, roseGiven, o
         transition={{ duration: ok ? 0.4 : 0.01, ease }}
       >
         {body}
+        {showCareRoseAnimation && <RoseTakeover mood="vent" />}
       </motion.div>
     </AnimatePresence>
   );
 }
 
 
-/* ------------------------------------------------------------------ */
 /* HM-04 · That's today                                                */
 /* ------------------------------------------------------------------ */
 export function ThatsToday({ post, onDone, onGood }: { post: Post; onDone: () => void; onGood: () => void }) {

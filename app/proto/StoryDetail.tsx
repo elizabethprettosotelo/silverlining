@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import type { Comment, Story } from "./data";
 import { isUnkind } from "./data";
 import ReportSheet from "./ReportSheet";
+import RoseTakeover from "./RoseTakeover";
 import { Avatar, Rose, Screen, Sheet, StoryText, TopBar, ease, useMotionSafe } from "./ui";
 
 type Category = "turned" | "vent" | "good";
@@ -47,6 +48,7 @@ export default function StoryDetail({
   const [sheet, setSheet] = useState<null | "options" | "rose" | "write" | "report">(null);
   const [draft, setDraft] = useState("");
   const [warning, setWarning] = useState("");
+  const [showRoseAnimation, setShowRoseAnimation] = useState(false);
   const ground = category === "turned" ? "g-turned" : category === "vent" ? "g-vent" : "g-good";
   const label = category === "turned" ? "Clearing up" : category === "vent" ? "Rainy day" : "Little win";
 
@@ -124,6 +126,7 @@ export default function StoryDetail({
         </section>
         <div style={{ height: 12 }} />
       </div>
+      {showRoseAnimation && <RoseTakeover mood={category} />}
       <div className="screen-foot">
         <div className="row">
           <button className="btn btn-secondary grow" onClick={() => setSheet("write")}>Write back</button>
@@ -144,7 +147,7 @@ export default function StoryDetail({
             <div className="sheet-centered" style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", gap: 16, textAlign: "center" }}>
               <span className="t-title">Give your nod today to this story?</span>
               <span className="t-caption">You get one nod a day. They’ll see it tomorrow, with no name attached.</span>
-              <button className="btn btn-accent" onClick={() => { onGiveRose(); setSheet(null); }}><Rose filled /> Give a nod</button>
+              <button className="btn btn-accent" onClick={() => { onGiveRose(); setShowRoseAnimation(true); setSheet(null); }}><Rose filled /> Give a nod</button>
               <button className="link center" onClick={() => setSheet(null)}>Save it for another story</button>
             </div>
           </Sheet>
