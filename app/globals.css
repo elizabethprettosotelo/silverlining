@@ -757,12 +757,26 @@ body {
   pointer-events: none;
 }
 
-/* The engraved rose that blooms onto a story you gave your rose to. */
-.rose-mark {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  pointer-events: none;
-  transform-origin: 50% 70%;
+/* Rose takeover (app/proto/RoseTakeover.tsx): vines and a rose grow over the
+   story from the bottom-right corner. Above the story, below the footer and sheets. */
+.rose-takeover { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+.rose-takeover svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.screen:has(.rose-takeover) .screen-foot { position: relative; z-index: 6; }
+.rt-vine { stroke: var(--mood-turned); fill: none; stroke-linecap: round; }
+.rt-rose { stroke: var(--turn-accent); fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.rt-leaf { fill: var(--ground-turned); }
+.rt-draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: rt-draw var(--dur, 1s) cubic-bezier(.22, 1, .36, 1) var(--delay, 0s) forwards; }
+.rt-pop { transform-box: view-box; transform-origin: 0 0; transform: scale(0); animation: rt-pop .7s cubic-bezier(.34, 1.56, .64, 1) var(--delay, 0s) forwards; }
+.rt-fade { opacity: 0; animation: rt-fade .6s ease var(--delay, 0s) forwards; }
+.rt-bud { transform-box: view-box; transform-origin: 0 0; transform: scale(0); animation: rt-bud 1.4s cubic-bezier(.22, 1, .36, 1) var(--delay, 0s) forwards; }
+.rt-bloom { transform-box: view-box; transform-origin: 0 0; animation: rt-open 1.6s cubic-bezier(.34, 1.4, .64, 1) var(--delay, 0s) both; }
+.rt-sway { transform-box: view-box; transform-origin: 0 0; animation: rt-sway 6s ease-in-out 4s infinite alternate; }
+@keyframes rt-draw { to { stroke-dashoffset: 0; } }
+@keyframes rt-pop { to { transform: scale(var(--s, 1)); } }
+@keyframes rt-fade { to { opacity: var(--o, 1); } }
+@keyframes rt-bud { 0% { transform: scale(0); opacity: 1; } 60% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.1); opacity: 0; } }
+@keyframes rt-open { from { transform: scale(.55) rotate(-8deg); opacity: 0; } to { transform: scale(1) rotate(0deg); opacity: 1; } }
+@keyframes rt-sway { from { transform: rotate(-1.5deg); } to { transform: rotate(1.5deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .rt-draw, .rt-pop, .rt-fade, .rt-bud, .rt-bloom, .rt-sway { animation-duration: .01s !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; }
 }
-.rose-mark svg { display: block; overflow: visible; }
