@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
 /*
  * The crow landing art (first onboarding screen), built as SVG in the same
@@ -83,7 +84,7 @@ export function buildLandingArt(svg: SVGSVGElement) {
   clip("rock", rock); clip("pebble", pebble);
   el("path", { d: rock, fill: P }, art); el("path", { d: pebble, fill: P }, art);
   const rockTop = cubic([2, 500], [12, 440], [70, 404], [126, 406]).concat(cubic([126, 406], [176, 408], [218, 440], [232, 506]).slice(1));
-  const rl = contours(art, rockTop, 30, 0, 3.6, "rock", { class: "land", "stroke-width": .75, opacity: .5 });
+  contours(art, rockTop, 30, 0, 3.6, "rock", { class: "land", "stroke-width": .75, opacity: .5 });
   contours(art, cubic([210, 506], [214, 486], [240, 476], [266, 506]), 7, 0, 3.4, "pebble", { class: "land", "stroke-width": .7, opacity: .5 });
   const cracks = el("g", { class: "land", "stroke-width": 1, opacity: .75 }, art);
   ["M124 410C128 430 140 446 158 456", "M72 428C76 446 88 460 104 470"].forEach(d => el("path", { d }, cracks));

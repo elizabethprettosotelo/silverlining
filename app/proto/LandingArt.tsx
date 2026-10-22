@@ -7,7 +7,7 @@
  */
 
 import { useEffect, useRef } from "react";
-import { buildLandingArt } from "./landingArt";
+import { buildLandingArt } from "./landingArtData";
 
 export default function LandingArt({ flying }: { flying: boolean }) {
   const ref = useRef<SVGSVGElement>(null);
