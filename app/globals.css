@@ -756,3 +756,13 @@ body {
   background: var(--turn-accent);
   pointer-events: none;
 }
+
+/* The engraved rose that blooms onto a story you gave your rose to. */
+.rose-mark {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  pointer-events: none;
+  transform-origin: 50% 70%;
+}
+.rose-mark svg { display: block; overflow: visible; }

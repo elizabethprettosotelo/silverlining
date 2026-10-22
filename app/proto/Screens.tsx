@@ -23,6 +23,7 @@ import {
   useMotionSafe,
 } from "./ui";
 import Scene from "./Scene";
+import RoseMark from "./RoseMark";
 
 /* ------------------------------------------------------------------ */
 /* Mood tab bar: good days · turned days · vents                       */
@@ -605,8 +606,11 @@ export function Reader({
             <span key={s.id} className={`dot ${i === index ? "on" : i < index ? "done" : ""}`} />
           ))}
         </div>
-        <Author name={story.name} initials={story.initials} sub="earlier today" />
-        <h1 className="t-title" style={{ margin: "18px 0 12px" }}>{story.title}</h1>
+        <div style={{ position: "relative" }}>
+          <AnimatePresence>{rosedThis && <RoseMark key="rose" size={70} />}</AnimatePresence>
+          <Author name={story.name} initials={story.initials} sub="earlier today" />
+          <h1 className="t-title" style={{ margin: "18px 0 12px", paddingRight: rosedThis ? 84 : 0 }}>{story.title}</h1>
+        </div>
         <StoryText a={story.a} hinge={story.hinge} b={story.b} animateTurn key={story.id} />
         <div style={{ marginTop: 22 }}>
           {rosedThis ? (
