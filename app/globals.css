@@ -401,10 +401,40 @@ body {
   padding: 18px;
 }
 .card-ink { box-shadow: inset 0 0 0 1.5px var(--text-ink); }
-.card-good {
+/* Clean, borderless cards: lifted off the ground by a soft shadow. */
+.card-good,
+.card-soft {
   background: var(--surface-good);
-  box-shadow: none;
-  border: 1.5px dashed var(--line-control);
+  border: 0;
+  box-shadow:
+    0 1px 2px rgba(17, 18, 32, 0.04),
+    0 12px 28px -18px rgba(17, 18, 32, 0.28);
+}
+[data-theme="night"] .card-good,
+[data-theme="night"] .card-soft {
+  box-shadow: 0 12px 28px -18px rgba(0, 0, 0, 0.7);
+}
+.card-tap {
+  appearance: none;
+  display: block;
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease;
+}
+.card-tap:hover {
+  box-shadow:
+    0 1px 2px rgba(17, 18, 32, 0.05),
+    0 16px 32px -16px rgba(17, 18, 32, 0.34);
+}
+.card-tap:focus-visible { outline: 2px solid var(--text-ink); outline-offset: 3px; }
+.clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .card-sunken { background: var(--surface-sunken); box-shadow: none; }
 
@@ -488,21 +518,30 @@ body {
 .banner-blocked { background: var(--blocked-bg); color: var(--blocked-ink); }
 
 /* Mood tab bar */
-.tabbar {
+.tabbar-wrap {
   position: absolute;
+  left: 0;
+  right: 0;
   bottom: 30px;
-  left: 50%;
-  transform: translateX(-50%);
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 20;
+}
+.tabbar {
+  position: relative;
   display: flex;
   gap: 4px;
   padding: 5px;
   border-radius: var(--r-pill);
   background: var(--surface-default);
   box-shadow: inset 0 0 0 1px var(--line-hairline), 0 8px 24px -12px rgba(17, 18, 32, 0.3);
-  z-index: 20;
+  pointer-events: auto;
 }
 .tabbar button {
   appearance: none;
+  position: relative;
+  z-index: 1;
   border: 0;
   width: 62px;
   height: 40px;
@@ -512,20 +551,22 @@ body {
   display: grid;
   place-items: center;
   cursor: pointer;
+  transition: color 0.25s ease;
 }
-.tabbar button[aria-current="page"] {
-  color: var(--text-ink);
-  box-shadow: inset 0 0 0 1.5px var(--mood-turned);
-  background: var(--ground-turned);
+.tabbar button[aria-current="page"] { color: var(--text-ink); }
+/* One pill that glides between moods, changing color as it goes. */
+.tab-pill {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  width: 62px;
+  height: 40px;
+  border-radius: var(--r-pill);
+  transition: background-color 0.35s ease, box-shadow 0.35s ease;
 }
-.tabbar button.good[aria-current="page"] {
-  box-shadow: inset 0 0 0 1.5px var(--mood-good);
-  background: var(--ground-good);
-}
-.tabbar button.vent[aria-current="page"] {
-  box-shadow: inset 0 0 0 1.5px var(--mood-vent);
-  background: var(--ground-vent);
-}
+.tab-pill.turned { background: var(--ground-turned); box-shadow: inset 0 0 0 1.5px var(--mood-turned); }
+.tab-pill.good { background: var(--ground-good); box-shadow: inset 0 0 0 1.5px var(--mood-good); }
+.tab-pill.vent { background: var(--ground-vent); box-shadow: inset 0 0 0 1.5px var(--mood-vent); }
 
 /* Sheets */
 .scrim {
@@ -670,4 +711,48 @@ body {
   .foot-ripple, .foot-reeds, .foot-rainring { animation: none; }
   .foot-rainring { opacity: 0.4; }
   .foot-layer { transform: none; }
+}
+/* ------------------------------------------------------------------ */
+/* Let it go: the envelope                                             */
+/* ------------------------------------------------------------------ */
+.envelope {
+  position: relative;
+  width: 240px;
+  height: 150px;
+  filter: drop-shadow(0 14px 22px rgba(17, 18, 32, 0.16));
+}
+.env-layer {
+  position: absolute;
+  inset: 0;
+  width: 240px;
+  height: 150px;
+  overflow: visible;
+}
+.env-back { fill: var(--surface-sunken); stroke: var(--line-hairline); }
+.env-front { fill: var(--surface-default); stroke: var(--line-hairline); }
+.env-fold { fill: none; stroke: var(--line-hairline); stroke-width: 1; }
+.env-flap { fill: var(--surface-good); stroke: var(--line-hairline); }
+.env-seal { fill: var(--turn-accent); }
+.env-letter {
+  position: absolute;
+  left: 20px;
+  top: 0;
+  width: 200px;
+  height: 128px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--surface-good);
+  box-shadow: inset 0 0 0 1px var(--line-hairline);
+  overflow: hidden;
+}
+.env-spark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: var(--turn-accent);
+  pointer-events: none;
 }

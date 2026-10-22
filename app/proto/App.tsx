@@ -5,19 +5,10 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import Compose, { type Post } from "./Compose";
 import Reveal from "./Reveal";
 import { SAMPLE, TURNED } from "./data";
-import { GoodDays, Home, LetGo, LockedHome, Midnight, Reader, ThatsToday, VentDoor, type Tab } from "./Screens";
+import { LetGo, LockedHome, Midnight, Reader, Reading, TABS, ThatsToday, type Tab } from "./Screens";
+import { NavDir } from "./ui";
 
-type View =
-  | "locked"
-  | "compose"
-  | "letgo"
-  | "home"
-  | "reader"
-  | "good"
-  | "vent"
-  | "today"
-  | "midnight"
-  | "reveal";
+type View = "locked" | "compose" | "letgo" | "reading" | "reader" | "today" | "midnight" | "reveal";
 
 const DAYS = ["Wed, Oct 21", "Thu, Oct 22", "Fri, Oct 23"];
 
@@ -25,9 +16,13 @@ const FALLBACK_POST: Post = { title: SAMPLE.title, a: SAMPLE.a, hinge: "And stil
 
 export default function App() {
   const [view, setView] = useState<View>("locked");
+  const [dir, setDir] = useState(1);
+  const [tab, setTab] = useState<Tab>("turned");
+  const [tabDir, setTabDir] = useState(1);
   const [day, setDay] = useState(0);
   const [post, setPost] = useState<Post | null>(null);
   const [readIdx, setReadIdx] = useState(0);
+  const [read, setRead] = useState<string[]>([]);
   const [roseGiven, setRoseGiven] = useState(false);
   const [theme, setTheme] = useState<"day" | "night">("day");
   const [demoSignal, setDemoSignal] = useState(0);
@@ -42,36 +37,49 @@ export default function App() {
   const p = post ?? FALLBACK_POST;
   const dateLabel = DAYS[Math.min(day, DAYS.length - 1)];
 
-  const go = useCallback((v: View) => setView(v), []);
-  const onTab = (t: Tab) => go(t === "turned" ? "home" : t);
-  const openFromHome = (t: Tab) => {
-    if (t === "turned") {
-      if (readIdx >= TURNED.length) go("today");
-      else go("reader");
-    } else go(t);
+  // d = 1 slides the next screen in from the right, -1 from the left.
+  const go = useCallback((v: View, d = 1) => {
+    setDir(d);
+    setView(v);
+  }, []);
+
+  const changeTab = (t: Tab) => {
+    setTabDir(TABS.indexOf(t) >= TABS.indexOf(tab) ? 1 : -1);
+    setTab(t);
+  };
+  const openReading = (t: Tab, d = 1) => {
+    changeTab(t);
+    go("reading", d);
   };
 
+  const openStory = (i: number) => {
+    setReadIdx(i);
+    setRead((r) => (r.includes(TURNED[i].id) ? r : [...r, TURNED[i].id]));
+    go("reader");
+  };
+
+  const clearDay = () => {
+    setPost(null);
+    setReadIdx(0);
+    setRead([]);
+    setRoseGiven(false);
+    setTab("turned");
+    setComposeKey((k) => k + 1);
+    go("locked");
+  };
   const newDay = () => {
     setDay((d) => d + 1);
-    setPost(null);
-    setReadIdx(0);
-    setRoseGiven(false);
-    setComposeKey((k) => k + 1);
-    go("locked");
+    clearDay();
   };
-
   const reset = () => {
     setDay(0);
-    setPost(null);
-    setReadIdx(0);
-    setRoseGiven(false);
-    setComposeKey((k) => k + 1);
-    go("locked");
+    clearDay();
   };
 
-  const jump = (v: View) => {
+  const jump = (v: View, t?: Tab) => {
     if (!post && v !== "locked" && v !== "compose") setPost(FALLBACK_POST);
     if (v === "compose") setComposeKey((k) => k + 1);
+    if (t) changeTab(t);
     go(v);
   };
 
@@ -86,7 +94,7 @@ export default function App() {
           key={`compose-${composeKey}`}
           dateLabel={dateLabel}
           demoSignal={demoSignal}
-          onBack={() => go("locked")}
+          onBack={() => go("locked", -1)}
           onPosted={(np) => {
             setPost(np);
             go("letgo");
@@ -95,18 +103,19 @@ export default function App() {
       );
       break;
     case "letgo":
-      screen = <LetGo key="letgo" post={p} onDone={() => go("home")} />;
+      screen = <LetGo key="letgo" post={p} onDone={() => openReading("turned")} />;
       break;
-    case "home":
+    case "reading":
       screen = (
-        <Home
-          key="home"
+        <Reading
+          key="reading"
+          tab={tab}
+          dir={tabDir}
+          onTab={changeTab}
           post={p}
           roseGiven={roseGiven}
-          readCount={readIdx}
-          onOpen={openFromHome}
-          onTab={onTab}
-          onMenuEnd={() => go("today")}
+          read={read}
+          onOpenStory={openStory}
         />
       );
       break;
@@ -114,27 +123,21 @@ export default function App() {
       screen = (
         <Reader
           key={`reader-${readIdx}`}
-          index={Math.min(readIdx, TURNED.length - 1)}
+          index={readIdx}
           roseGiven={roseGiven}
           onGiveRose={() => setRoseGiven(true)}
-          onBack={() => go("home")}
+          onBack={() => openReading("turned", -1)}
           onEnd={() => go("today")}
           onNext={() => {
             const n = readIdx + 1;
-            setReadIdx(n);
             if (n >= TURNED.length) go("today");
+            else openStory(n);
           }}
         />
       );
       break;
-    case "good":
-      screen = <GoodDays key="good" onBack={() => go("home")} onTab={onTab} />;
-      break;
-    case "vent":
-      screen = <VentDoor key="vent" onBack={() => go("home")} onTab={onTab} />;
-      break;
     case "today":
-      screen = <ThatsToday key="today" post={p} onDone={() => go("midnight")} onGood={() => go("good")} />;
+      screen = <ThatsToday key="today" post={p} onDone={() => go("midnight")} onGood={() => openReading("good")} />;
       break;
     case "midnight":
       screen = <Midnight key="midnight" onDone={() => go("reveal")} />;
@@ -143,6 +146,8 @@ export default function App() {
       screen = <Reveal key="reveal" post={p} dateLabel={DAYS[Math.max(0, day)]} onFinish={newDay} />;
       break;
   }
+
+
 
   return (
     <main className="stage">
@@ -154,7 +159,11 @@ export default function App() {
             <svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x="0.5" y="0.5" width="22" height="11" rx="3.5" stroke="currentColor" opacity="0.4" /><rect x="2" y="2" width="19" height="8" rx="2" fill="currentColor" /><rect x="24" y="4" width="1.5" height="4" rx="0.75" fill="currentColor" opacity="0.4" /></svg>
           </span>
         </div>
-        <AnimatePresence mode="wait">{screen}</AnimatePresence>
+        <NavDir.Provider value={dir}>
+          <AnimatePresence mode="wait" custom={dir}>
+            {screen}
+          </AnimatePresence>
+        </NavDir.Provider>
         <div className="home-indicator" aria-hidden />
       </div>
 
@@ -183,10 +192,10 @@ export default function App() {
           <button aria-pressed={view === "locked"} onClick={() => jump("locked")}>1 · Locked home</button>
           <button aria-pressed={view === "compose"} onClick={() => jump("compose")}>2 · Write</button>
           <button aria-pressed={view === "letgo"} onClick={() => jump("letgo")}>3 · Let it go</button>
-          <button aria-pressed={view === "home"} onClick={() => jump("home")}>4 · Today&apos;s reading</button>
+          <button aria-pressed={view === "reading" && tab === "turned"} onClick={() => jump("reading", "turned")}>4 · Turned days</button>
           <button aria-pressed={view === "reader"} onClick={() => jump("reader")}>5 · Story that turned</button>
-          <button aria-pressed={view === "vent"} onClick={() => jump("vent")}>6 · Vent door</button>
-          <button aria-pressed={view === "good"} onClick={() => jump("good")}>7 · Good days</button>
+          <button aria-pressed={view === "reading" && tab === "vent"} onClick={() => jump("reading", "vent")}>6 · Vents</button>
+          <button aria-pressed={view === "reading" && tab === "good"} onClick={() => jump("reading", "good")}>7 · Good days</button>
           <button aria-pressed={view === "today"} onClick={() => jump("today")}>8 · That&apos;s today</button>
           <button aria-pressed={view === "reveal"} onClick={() => jump("reveal")}>9 · Next-day reveal</button>
         </div>

@@ -1,7 +1,7 @@
 "use client";
 
-import { motion, useReducedMotion } from "motion/react";
-import type { ReactNode, CSSProperties } from "react";
+import { motion, useReducedMotion, type Variants } from "motion/react";
+import { createContext, useContext, type ReactNode, type CSSProperties } from "react";
 
 /* ------------------------------------------------------------------ */
 /* Motion tokens (mirrors the Figma "Motion" section)                 */
@@ -14,7 +14,22 @@ export function useMotionSafe() {
   return !reduce;
 }
 
-/* A full-phone screen that fades and lifts in. */
+/* Navigation direction: 1 = forward (slides in from the right), -1 = back. */
+export const NavDir = createContext(1);
+
+/* Side-to-side slide + fade. `d` is the direction, passed as `custom`. */
+export function slide(dist: number, names: readonly [string, string, string] = ["enter", "center", "exit"]): Variants {
+  const [enter, center, exit] = names;
+  return {
+    [enter]: (d: number) => ({ opacity: 0, x: dist * d }),
+    [center]: { opacity: 1, x: 0 },
+    [exit]: (d: number) => ({ opacity: 0, x: -dist * d }),
+  };
+}
+const screenSlide = slide(36);
+const screenFade: Variants = { enter: { opacity: 0 }, center: { opacity: 1 }, exit: { opacity: 0 } };
+
+/* A full-phone screen that slides and fades in, in the direction of travel. */
 export function Screen({
   children,
   ground = "g-default",
@@ -27,14 +42,17 @@ export function Screen({
   style?: CSSProperties;
 }) {
   const ok = useMotionSafe();
+  const dir = useContext(NavDir);
   return (
     <motion.div
       className={`screen ${ground} ${className}`}
       style={style}
-      initial={ok ? { opacity: 0, y: 10 } : { opacity: 0 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={ok ? { opacity: 0, y: -6 } : { opacity: 0 }}
-      transition={{ duration: ok ? 0.32 : 0.01, ease }}
+      custom={dir}
+      variants={ok ? screenSlide : screenFade}
+      initial="enter"
+      animate="center"
+      exit="exit"
+      transition={{ duration: ok ? 0.34 : 0.01, ease }}
     >
       {children}
     </motion.div>
