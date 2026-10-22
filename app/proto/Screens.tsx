@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import type { Post } from "./Compose";
 import type { UserProfile } from "./Onboarding";
 import { GOOD, ME, TURNED, VENTS, isLowEffort, type Comment } from "./data";
@@ -14,7 +14,6 @@ import {
   Rain,
   Rose,
   Screen,
-  Sheet,
   Sun,
   TopBar,
   ease,
@@ -23,7 +22,6 @@ import {
   useMotionSafe,
 } from "./ui";
 import Scene from "./Scene";
-import RoseTakeover from "./RoseTakeover";
 import StoryDetail from "./StoryDetail";
 
 /* ------------------------------------------------------------------ */
@@ -33,6 +31,10 @@ import StoryDetail from "./StoryDetail";
 export type Tab = "good" | "turned" | "vent";
 export const TABS: Tab[] = ["good", "turned", "vent"];
 const TAB_STEP = 66; // button width + gap
+const FEED_CARD_STYLE: CSSProperties = {
+  border: "1px solid var(--line-hairline)",
+  boxShadow: "0 2px 8px -6px rgba(17, 18, 32, 0.36)",
+};
 
 export function TabBar({ current, onChange }: { current: Tab; onChange: (t: Tab) => void }) {
   const ok = useMotionSafe();
@@ -81,7 +83,7 @@ export function LockedHome({ onWrite, onMenu, dateLabel, isNewDay }: { onWrite: 
         <span className="row t-eyebrow" style={{ gap: 6 }}>{isNewDay && <Sun size={15} aria-hidden />} {dateLabel}</span>
         <button className="link" style={{ padding: "0 0 8px" }} onClick={onMenu}>Menu</button>
       </div>
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
         <div className="screen-body" style={{ paddingTop: 28 }}>
           <h1 className="t-display" style={{ margin: "0 0 18px" }}>Today</h1>
           <div aria-hidden="true" style={{ filter: "blur(3px)", opacity: 0.68, pointerEvents: "none", userSelect: "none" }}>
@@ -103,7 +105,7 @@ export function LockedHome({ onWrite, onMenu, dateLabel, isNewDay }: { onWrite: 
           </div>
         </div>
         <div className="screen-foot">
-          <button className="btn btn-primary btn-full" onClick={onWrite}>Write today&apos;s story</button>
+          <button className="btn btn-primary btn-full" onClick={onWrite}>Write my entry</button>
         </div>
       </div>
     </Screen>
@@ -266,6 +268,10 @@ export function Reading({
   onReportStory,
   commentsByStory,
   onAddComment,
+  rainyReady,
+  onRainyReady,
+  unlockedVentCount,
+  onUnlockNext,
 }: {
   tab: Tab;
   dir: number;
@@ -282,6 +288,10 @@ export function Reading({
   onReportStory: (id: string) => void;
   commentsByStory: Record<string, Comment[]>;
   onAddComment: (id: string, comment: Comment) => void;
+  rainyReady: boolean;
+  onRainyReady: () => void;
+  unlockedVentCount: number;
+  onUnlockNext: () => void;
 }) {
   const ok = useMotionSafe();
   const [immersive, setImmersive] = useState(false);
@@ -300,7 +310,7 @@ export function Reading({
         >
           {tab === "good" && <GoodPane onOpen={onOpenGoodStory} hiddenStoryIds={hiddenStoryIds} />}
           {tab === "turned" && <TurnedPane post={post} roseGiven={roseGiven} read={read} onOpen={onOpenStory} hiddenStoryIds={hiddenStoryIds} />}
-          {tab === "vent" && <VentPane onLeave={() => onTab("turned")} onImmersive={setImmersive} hiddenStoryIds={hiddenStoryIds} onReport={onReportStory} roseGiven={roseGiven} onGiveRose={onGiveRose} profile={profile} commentsByStory={commentsByStory} onAddComment={onAddComment} />}
+          {tab === "vent" && <VentPane onLeave={() => onTab("turned")} onImmersive={setImmersive} hiddenStoryIds={hiddenStoryIds} onReport={onReportStory} roseGiven={roseGiven} onGiveRose={onGiveRose} profile={profile} commentsByStory={commentsByStory} onAddComment={onAddComment} rainyReady={rainyReady} onRainyReady={onRainyReady} unlockedVentCount={unlockedVentCount} onUnlockNext={onUnlockNext} />}
         </motion.div>
       </AnimatePresence>
       <button className="link" style={{ position: "absolute", top: 54, right: 24, zIndex: 21 }} onClick={onMenu}>Menu</button>
@@ -311,7 +321,7 @@ export function Reading({
 
 function PaneEnd({ title, sub }: { title: string; sub: ReactNode }) {
   return (
-    <div className="stack" style={{ alignItems: "center", margin: "28px 0 130px", gap: 4, textAlign: "center" }}>
+    <div className="stack" style={{ alignItems: "center", margin: "52px 0 130px", gap: 4, textAlign: "center" }}>
       <span className="t-label" style={{ fontSize: 14 }}>{title}</span>
       <span className="t-caption">{sub}</span>
     </div>
@@ -326,7 +336,7 @@ function TurnedPane({ post, roseGiven, read, onOpen, hiddenStoryIds }: { post: P
   const stories = TURNED.map((story, index) => ({ story, index })).filter(({ story }) => !hiddenStoryIds.includes(story.id));
   return (
     <>
-      <Scene mood="turned" height={210} />
+      <Scene mood="turned" height={210} foot={false} />
       <div className="screen-body" style={{ paddingTop: 122 }}>
         <h1 className="t-display" style={{ margin: "0 0 6px" }}>Clearing up</h1>
         <p className="t-caption" style={{ margin: "0 0 18px" }}>
@@ -338,7 +348,8 @@ function TurnedPane({ post, roseGiven, read, onOpen, hiddenStoryIds }: { post: P
             return (
               <motion.article
                 key={s.id}
-                className="card card-soft card-tap"
+                className="card card-soft card-tap story-feed-card story-feed-turned"
+                style={{ ...FEED_CARD_STYLE, background: "var(--ground-turned)" }}
                 role="button"
                 tabIndex={0}
                 onClick={() => onOpen(i)}
@@ -390,12 +401,12 @@ function GoodPane({ onOpen, hiddenStoryIds }: { onOpen: (index: number) => void;
   const stories = GOOD.map((story, index) => ({ story, index })).filter(({ story }) => !hiddenStoryIds.includes(story.id));
   return (
     <>
-      <Scene mood="good" height={210} />
+      <Scene mood="good" height={210} foot={false} />
       <div className="screen-body" style={{ paddingTop: 122 }}>
         <h1 className="t-display" style={{ margin: "0 0 18px" }}>Little wins</h1>
         <div className="stack" style={{ gap: 14 }}>
           {stories.map(({ story: s, index: i }) => (
-            <motion.button key={s.id} className="card card-soft card-tap" onClick={() => onOpen(i)} {...cardIn(ok, i)}>
+            <motion.button key={s.id} className="card card-soft card-tap story-feed-card story-feed-good" style={{ ...FEED_CARD_STYLE, background: "var(--ground-good)" }} onClick={() => onOpen(i)} {...cardIn(ok, i)}>
               <div className="t-title-sm" style={{ marginBottom: 8 }}>{s.title}</div>
               <p className="t-story" style={{ margin: 0, fontSize: 17, lineHeight: "26px" }}>{s.a}</p>
               <div className="row" style={{ justifyContent: "space-between", marginTop: 14 }}>
@@ -418,20 +429,20 @@ function GoodPane({ onOpen, hiddenStoryIds }: { onOpen: (index: number) => void;
 /* ------------------------------------------------------------------ */
 /* VT-01..04 · Vents                                                   */
 /* ------------------------------------------------------------------ */
-type VentStage = "care" | "vent" | "done";
+type VentStage = "care" | "feed" | "vent" | "done";
 const ventSlide = slide(70, ["vEnter", "vCenter", "vExit"]);
 
-function VentPane({ onLeave, onImmersive, hiddenStoryIds, onReport, roseGiven, onGiveRose, profile, commentsByStory, onAddComment }: { onLeave: () => void; onImmersive: (on: boolean) => void; hiddenStoryIds: string[]; onReport: (id: string) => void; roseGiven: boolean; onGiveRose: (id: string) => void; profile: UserProfile; commentsByStory: Record<string, Comment[]>; onAddComment: (id: string, comment: Comment) => void }) {
+function VentPane({ onLeave, onImmersive, hiddenStoryIds, onReport, roseGiven, onGiveRose, profile, commentsByStory, onAddComment, rainyReady, onRainyReady, unlockedVentCount, onUnlockNext }: { onLeave: () => void; onImmersive: (on: boolean) => void; hiddenStoryIds: string[]; onReport: (id: string) => void; roseGiven: boolean; onGiveRose: (id: string) => void; profile: UserProfile; commentsByStory: Record<string, Comment[]>; onAddComment: (id: string, comment: Comment) => void; rainyReady: boolean; onRainyReady: () => void; unlockedVentCount: number; onUnlockNext: () => void }) {
   const ok = useMotionSafe();
-  const [stage, setStage] = useState<VentStage>("care");
+  const [stage, setStage] = useState<VentStage>(rainyReady ? "feed" : "care");
   const [vdir, setVdir] = useState(1);
-  const [idx, setIdx] = useState(() => Math.max(0, VENTS.findIndex((item) => !hiddenStoryIds.includes(item.id))));
+  const [idx, setIdx] = useState(() => Math.max(0, VENTS.findIndex((item, index) => index < unlockedVentCount && !hiddenStoryIds.includes(item.id))));
   const [nudges, setNudges] = useState(0);
-  const [careRose, setCareRose] = useState(false);
-  const [showCareRoseAnimation, setShowCareRoseAnimation] = useState(false);
   const vent = VENTS[idx];
-  const availableVents = VENTS.filter((item) => !hiddenStoryIds.includes(item.id));
-  const nextAvailableIndex = VENTS.findIndex((item, index) => index > idx && !hiddenStoryIds.includes(item.id));
+  const availableVents = VENTS.map((story, index) => ({ story, index })).filter(({ story, index }) => index < unlockedVentCount && !hiddenStoryIds.includes(story.id));
+  const nextAvailableIndex = VENTS.findIndex((item, index) => index > idx && index < unlockedVentCount && !hiddenStoryIds.includes(item.id));
+  const nextLockedIndex = VENTS.findIndex((item, index) => index >= unlockedVentCount && !hiddenStoryIds.includes(item.id));
+  const hasReplied = (commentsByStory[vent.id] ?? []).length > 0;
 
   const to = (s: VentStage, d = 1) => {
     setVdir(d);
@@ -443,17 +454,22 @@ function VentPane({ onLeave, onImmersive, hiddenStoryIds, onReport, roseGiven, o
   };
 
   // Reading a vent is a focused space: the tab bar steps aside.
-  useEffect(() => onImmersive(stage !== "care"), [stage, onImmersive]);
+  useEffect(() => onImmersive(stage === "vent" || stage === "done"), [stage, onImmersive]);
   useEffect(() => () => onImmersive(false), [onImmersive]);
 
-  if (availableVents.length === 0 && stage === "care") {
+  if (availableVents.length === 0 && (stage === "care" || stage === "feed")) {
     return <Screen ground="g-vent"><div className="screen-body" style={{ display: "grid", placeItems: "center", textAlign: "center" }}><p className="t-body muted">No rainy days are waiting right now.</p></div><div className="screen-foot"><button className="btn btn-primary btn-full" onClick={leave}>Back to today</button></div></Screen>;
   }
 
   const nextVent = () => {
+    if (!hasReplied) return;
     setNudges(0);
     if (nextAvailableIndex >= 0) {
       setIdx(nextAvailableIndex);
+      to("vent");
+    } else if (hasReplied && nextLockedIndex >= 0) {
+      onUnlockNext();
+      setIdx(nextLockedIndex);
       to("vent");
     } else to("done");
   };
@@ -476,25 +492,35 @@ function VentPane({ onLeave, onImmersive, hiddenStoryIds, onReport, roseGiven, o
           <p className="t-story" style={{ margin: 0, color: "var(--text-muted)" }}>
             This one&apos;s a rough day. You don&apos;t have to fix it. Just let them know someone read it.
           </p>
-          <article className="card card-soft story-vent" style={{ marginTop: 20, padding: 18, background: "var(--ground-vent)" }}>
-            <div className="row" style={{ gap: 8, marginBottom: 10 }}><Avatar initials={vent.initials} size={24} /><span className="t-byline">{vent.name}</span></div>
-            <h2 className="t-title-sm" style={{ margin: "0 0 8px" }}>{vent.title}</h2>
-            <p className="t-comment clamp-3" style={{ margin: 0 }}>{vent.a}</p>
-            <div className="row story-actions" style={{ minHeight: 56, gap: 12, marginTop: 10, padding: "8px 0", borderBottom: "1px solid var(--line-hairline)" }}>
-              <button className="rose-action" style={{ appearance: "none", width: 44, height: 44, flex: "0 0 44px", display: "grid", placeItems: "center", padding: 0, border: `1.5px solid ${roseGiven ? "var(--line-hairline)" : "var(--turn-accent)"}`, borderRadius: "50%", background: roseGiven ? "var(--surface-sunken)" : "var(--turn-wash)", color: roseGiven ? "var(--text-muted)" : "var(--turn-accent)", cursor: roseGiven ? "default" : "pointer" }} aria-label={roseGiven ? "You have given today's nod" : "Give a nod"} disabled={roseGiven} onClick={() => setCareRose(true)}><Rose filled={roseGiven} /></button>
-              <button className="story-comment-jump" onClick={() => to("vent")}>Comments</button>
-            </div>
-          </article>
         </div>
         <div className="screen-foot" style={{ paddingBottom: 110 }}>
           <div className="row">
             <button className="btn btn-secondary grow" onClick={leave}>Not today</button>
-            <button className="btn btn-primary grow" onClick={() => to("vent")}>I&apos;m ready</button>
+            <button className="btn btn-primary grow" onClick={() => { onRainyReady(); to("feed"); }}>I&apos;m ready</button>
           </div>
         </div>
-        <AnimatePresence>
-          {careRose && <Sheet label="Give your nod" onClose={() => setCareRose(false)}><div className="sheet-centered" style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", gap: 16, textAlign: "center" }}><span className="t-title">Give your nod today to this story?</span><span className="t-caption">You get one a day. They’ll see it tomorrow, with no name attached.</span><button className="btn btn-accent" onClick={() => { onGiveRose(vent.id); setCareRose(false); setShowCareRoseAnimation(true); }}><Rose filled /> Give a nod</button><button className="link center" onClick={() => setCareRose(false)}>Save it for another story</button></div></Sheet>}
-        </AnimatePresence>
+      </>
+    );
+  } else if (stage === "feed") {
+    body = (
+      <>
+        <Scene mood="vent" height={210} />
+        <div className="screen-body" style={{ paddingTop: 122 }}>
+          <h1 className="t-display" style={{ margin: "0 0 8px" }}>Rainy days</h1>
+          <p className="t-caption" style={{ margin: "0 0 18px" }}>Write back to open the next rainy day.</p>
+          <div className="stack" style={{ gap: 14 }}>
+            {availableVents.map(({ story, index }) => (
+              <motion.button key={story.id} className="card card-soft card-tap story-feed-card story-feed-vent" style={{ ...FEED_CARD_STYLE, background: "var(--ground-vent)" }} onClick={() => { setIdx(index); to("vent"); }} {...cardIn(ok, index)}>
+                <div className="row" style={{ justifyContent: "space-between", marginBottom: 8 }}>
+                  <span className="t-title-sm">{story.title}</span>
+                  <span className="t-eyebrow" style={{ color: "var(--mood-vent)" }}>Rainy day</span>
+                </div>
+                <p className="t-story clamp-3 muted" style={{ margin: 0, fontSize: 17, lineHeight: "26px" }}>{story.a}</p>
+                <div className="row" style={{ gap: 8, marginTop: 14 }}><Avatar initials={story.initials} size={22} /><span className="t-byline" style={{ fontSize: 13 }}>{story.name}</span></div>
+              </motion.button>
+            ))}
+          </div>
+        </div>
       </>
     );
   } else if (stage === "done") {
@@ -526,11 +552,14 @@ function VentPane({ onLeave, onImmersive, hiddenStoryIds, onReport, roseGiven, o
         profileInitials={profile.initials}
         roseGiven={roseGiven}
         onGiveRose={() => onGiveRose(vent.id)}
-        onBack={() => to("care", -1)}
+        onBack={() => to("feed", -1)}
         onNext={nextVent}
         nextLabel="Next"
+        nextDisabled={!hasReplied}
+        nextHint={!hasReplied ? "Write back to unlock the next rainy day." : undefined}
+        commentsLocked={vent.comments.length > 0 && !hasReplied}
         onBreak={leave}
-        comments={[...(commentsByStory[vent.id] ?? []), ...vent.comments]}
+        comments={hasReplied ? [...(commentsByStory[vent.id] ?? []), ...vent.comments] : []}
         onAddComment={(comment) => onAddComment(vent.id, comment)}
         onReport={() => onReport(vent.id)}
         validateComment={validateReply}
@@ -551,7 +580,6 @@ function VentPane({ onLeave, onImmersive, hiddenStoryIds, onReport, roseGiven, o
         transition={{ duration: ok ? 0.4 : 0.01, ease }}
       >
         {body}
-        {showCareRoseAnimation && <RoseTakeover mood="vent" />}
       </motion.div>
     </AnimatePresence>
   );

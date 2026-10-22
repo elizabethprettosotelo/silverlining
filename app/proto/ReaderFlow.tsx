@@ -11,6 +11,7 @@ export default function ReaderFlow({
   category,
   roseGiven,
   comments,
+  commentsLocked,
   onGiveRose,
   onAddComment,
   onNext,
@@ -25,6 +26,7 @@ export default function ReaderFlow({
   category: Tab;
   roseGiven: boolean;
   comments: Comment[];
+  commentsLocked: boolean;
   onGiveRose: (id: string) => void;
   onAddComment: (id: string, comment: Comment) => void;
   onNext: () => void;
@@ -40,6 +42,7 @@ export default function ReaderFlow({
       profileInitials={profile.initials}
       roseGiven={roseGiven}
       comments={comments}
+      commentsLocked={commentsLocked}
       onGiveRose={() => onGiveRose(story.id)}
       onAddComment={(comment) => onAddComment(story.id, comment)}
       onBack={onBack}

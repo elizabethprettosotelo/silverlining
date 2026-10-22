@@ -21,10 +21,13 @@ export default function StoryDetail({
   onNext,
   onBreak,
   comments,
+  commentsLocked = false,
   onAddComment,
   onReport,
   validateComment,
   nextLabel = "Next",
+  nextDisabled = false,
+  nextHint,
   progressLabel,
 }: {
   story: Story;
@@ -37,10 +40,13 @@ export default function StoryDetail({
   onNext: () => void;
   onBreak: () => void;
   comments: Comment[];
+  commentsLocked?: boolean;
   onAddComment: (comment: Comment) => void;
   onReport: () => void;
   validateComment?: (text: string) => string | null;
   nextLabel?: string;
+  nextDisabled?: boolean;
+  nextHint?: string;
   progressLabel?: string;
 }) {
   const ok = useMotionSafe();
@@ -122,15 +128,20 @@ export default function StoryDetail({
               </motion.article>
             ))}
           </AnimatePresence>
-          {comments.length === 0 && <p className="t-caption">Nobody wrote back this time. You still said it out loud, and that was the point.</p>}
+          {commentsLocked ? (
+            <p className="t-caption">Write back to see the comments.</p>
+          ) : comments.length === 0 ? (
+            <p className="t-caption">Nobody wrote back this time. You still said it out loud, and that was the point.</p>
+          ) : null}
         </section>
         <div style={{ height: 12 }} />
       </div>
       {showRoseAnimation && <RoseTakeover mood={category} />}
       <div className="screen-foot">
+        {nextHint && <span className="t-caption" style={{ textAlign: "center" }}>{nextHint}</span>}
         <div className="row">
           <button className="btn btn-secondary grow" onClick={() => setSheet("write")}>Write back</button>
-          <button className="btn btn-primary grow" onClick={onNext}>{nextLabel}</button>
+          <button className="btn btn-primary grow" disabled={nextDisabled} onClick={onNext}>{nextLabel}</button>
         </div>
       </div>
 

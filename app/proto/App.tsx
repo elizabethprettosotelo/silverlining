@@ -7,7 +7,7 @@ import Compose, { type Post } from "./Compose";
 import Onboarding, { type UserProfile } from "./Onboarding";
 import ReaderFlow from "./ReaderFlow";
 import Reveal from "./Reveal";
-import { GOOD, SAMPLE, TURNED, type Comment } from "./data";
+import { GOOD, SAMPLE, TURNED, VENTS, type Comment } from "./data";
 import { LetGo, LockedHome, Midnight, Reading, TABS, ThatsToday, type Tab } from "./Screens";
 import { NavDir } from "./ui";
 
@@ -37,6 +37,8 @@ export default function App() {
   const [keptStories, setKeptStories] = useState<KeptStory[]>([]);
   const [hiddenStoryIds, setHiddenStoryIds] = useState<string[]>([]);
   const [commentsByStory, setCommentsByStory] = useState<Record<string, Comment[]>>({});
+  const [rainyReady, setRainyReady] = useState(false);
+  const [unlockedVentCount, setUnlockedVentCount] = useState(1);
 
   // Night mode follows the clock by default, like the product would.
   useEffect(() => {
@@ -80,6 +82,8 @@ export default function App() {
     setRoseGiven(false);
     setHiddenStoryIds([]);
     setCommentsByStory({});
+    setRainyReady(false);
+    setUnlockedVentCount(1);
     setTab("turned");
     setComposeKey((k) => k + 1);
     go("locked");
@@ -93,6 +97,8 @@ export default function App() {
     setKeptStories([]);
     setHiddenStoryIds([]);
     setCommentsByStory({});
+    setRainyReady(false);
+    setUnlockedVentCount(1);
     setProfile({ name: "quietharbor", initials: "JA", contact: "", notifications: false });
     setOnboardingKey((key) => key + 1);
     clearDay();
@@ -108,6 +114,8 @@ export default function App() {
     setKeptStories([]);
     setCommentsByStory({});
     setHiddenStoryIds([]);
+    setRainyReady(false);
+    setUnlockedVentCount(1);
     setProfile({ name: "quietharbor", initials: "JA", contact: "", notifications: false });
     setComposeKey((key) => key + 1);
     setOnboardingKey((key) => key + 1);
@@ -174,23 +182,28 @@ export default function App() {
           onReportStory={(id) => setHiddenStoryIds((ids) => ids.includes(id) ? ids : [...ids, id])}
           commentsByStory={commentsByStory}
           onAddComment={(id, comment) => setCommentsByStory((items) => ({ ...items, [id]: [...(items[id] ?? []), comment] }))}
+          rainyReady={rainyReady}
+          onRainyReady={() => setRainyReady(true)}
+          unlockedVentCount={unlockedVentCount}
+          onUnlockNext={() => setUnlockedVentCount((count) => Math.min(VENTS.length, count + 1))}
         />
       );
       break;
-    case "reader":
+    case "reader": {
+      const readerStories = readerCategory === "good" ? GOOD : TURNED;
+      const story = readerStories[readIdx];
+      const ownComments = commentsByStory[story.id] ?? [];
       screen = (
         <ReaderFlow
           key={`reader-${readIdx}`}
-          story={readerCategory === "good" ? GOOD[readIdx] : TURNED[readIdx]}
+          story={story}
           index={readIdx}
           total={readerCategory === "good" ? GOOD.length : TURNED.length}
           profile={profile}
           category={readerCategory}
           roseGiven={roseGiven}
-          comments={[
-            ...(commentsByStory[(readerCategory === "good" ? GOOD : TURNED)[readIdx].id] ?? []),
-            ...(readerCategory === "good" ? GOOD : TURNED)[readIdx].comments,
-          ]}
+          comments={[...ownComments, ...(ownComments.length > 0 ? story.comments : [])]}
+          commentsLocked={ownComments.length === 0 && story.comments.length > 0}
           onGiveRose={() => setRoseGiven(true)}
           onAddComment={(id, comment) => setCommentsByStory((items) => ({ ...items, [id]: [...(items[id] ?? []), comment] }))}
           onBack={() => openReading(readerCategory, -1)}
@@ -207,6 +220,7 @@ export default function App() {
         />
       );
       break;
+    }
     case "today":
       screen = <ThatsToday key="today" post={p} onDone={() => go("midnight")} onGood={() => openReading("good")} />;
       break;

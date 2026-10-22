@@ -172,7 +172,7 @@ export default function Compose({
               <span className="t-comment muted grow" style={{ fontStyle: "italic" }}>
                 {PROMPTS[promptIdx]}
               </span>
-              <button className="iconbtn" style={{ marginLeft: 0, flex: "0 0 44px" }} aria-label="Different question" title="Different question" onClick={() => setPromptIdx((promptIdx + 1) % PROMPTS.length)}>
+              <button className="iconbtn" style={{ marginLeft: 0, flex: "0 0 44px" }} aria-label="Different question" title="Different question" onClick={() => setPromptIdx((index) => (index + 1) % PROMPTS.length)}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5" /><path d="M5.5 9a7 7 0 0112-2L20 9M4 15l2.5 2a7 7 0 0012-2" /></svg>
               </button>
             </div>
@@ -193,7 +193,7 @@ export default function Compose({
               setTitle(e.target.value);
               setTitleNudge(false);
             }}
-            placeholder={titleNudge ? "Give it a name" : "Title (you can add it last)"}
+            placeholder={titleNudge ? "Give it a name" : "Title"}
             aria-label="Title"
           />
         </div>

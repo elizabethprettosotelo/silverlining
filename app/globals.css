@@ -208,6 +208,7 @@ body {
 }
 .screen-body {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 0 24px;
   scrollbar-width: none;
@@ -443,6 +444,12 @@ a:focus-visible,
     0 16px 32px -16px rgba(17, 18, 32, 0.34);
 }
 .card-tap:focus-visible { outline: 2px solid var(--text-ink); outline-offset: 3px; }
+.story-feed-card { background: var(--surface-default); border: 1px solid var(--line-hairline); box-shadow: 0 2px 8px -6px rgba(17, 18, 32, 0.36); }
+.story-feed-card.card-tap:hover { box-shadow: 0 4px 14px -6px rgba(17, 18, 32, 0.38); }
+[data-theme="night"] .story-feed-card { border-color: var(--line-control); box-shadow: inset 0 0 0 1px var(--line-hairline), 0 8px 18px -14px rgba(0, 0, 0, 0.8); }
+.story-feed-turned { background: var(--ground-turned); }
+.story-feed-good { background: var(--ground-good); }
+.story-feed-vent { background: var(--ground-vent); }
 .story-detail-body { padding-top: 4px; }
 .story-detail-card { padding: 20px; }
 .story-vent { background: var(--ground-vent); }
