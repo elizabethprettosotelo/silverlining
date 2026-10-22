@@ -120,7 +120,7 @@ export default function Onboarding({ onComplete }: { onComplete: (profile: UserP
     <Screen ground="g-default">
       {step === 0 && <LandingArt flying={flying} />}
       {step > 0 && <TopBar onBack={back} />}
-      <div className="screen-body" style={{ paddingTop: step === 0 ? 440 : 10 }}>
+      <div className="screen-body" style={{ paddingTop: step === 0 ? 440 : 10, position: step === 0 ? "relative" : undefined, zIndex: step === 0 ? 1 : undefined }}>
         {step > 0 && (
           <div className="onboarding-progress" role="progressbar" aria-label="Account setup progress" aria-valuemin={1} aria-valuemax={12} aria-valuenow={step} aria-valuetext="Account setup progress" style={{ height: 4, margin: "2px 0 18px", overflow: "hidden", borderRadius: 2, background: "var(--line-hairline)" }}>
             <motion.div style={{ height: "100%", borderRadius: 2, background: "var(--turn-accent)" }} animate={{ width: `${(step / 12) * 100}%` }} transition={{ duration: ok ? 0.25 : 0.01, ease }} />
