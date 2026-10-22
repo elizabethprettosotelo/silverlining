@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Avatar, BookOpen, Moon, Pen, Screen, Sheet, Sun, TopBar, ease, useMotionSafe } from "./ui";
+import LandingArt from "./LandingArt";
 
 export type UserProfile = {
   name: string;
@@ -45,6 +46,7 @@ export default function Onboarding({ onComplete }: { onComplete: (profile: UserP
   const [agreements, setAgreements] = useState([false, false, false]);
   const [notice, setNotice] = useState("");
   const [showRules, setShowRules] = useState(false);
+  const [flying, setFlying] = useState(false);
 
   const numericYear = Number(year);
   const numericMonth = Number(month);
@@ -116,8 +118,9 @@ export default function Onboarding({ onComplete }: { onComplete: (profile: UserP
 
   return (
     <Screen ground="g-default">
+      {step === 0 && <LandingArt flying={flying} />}
       {step > 0 && <TopBar onBack={back} />}
-      <div className="screen-body" style={{ paddingTop: step === 0 ? 72 : 10 }}>
+      <div className="screen-body" style={{ paddingTop: step === 0 ? 440 : 10 }}>
         {step > 0 && (
           <div className="onboarding-progress" role="progressbar" aria-label="Account setup progress" aria-valuemin={1} aria-valuemax={12} aria-valuenow={step} aria-valuetext="Account setup progress" style={{ height: 4, margin: "2px 0 18px", overflow: "hidden", borderRadius: 2, background: "var(--line-hairline)" }}>
             <motion.div style={{ height: "100%", borderRadius: 2, background: "var(--turn-accent)" }} animate={{ width: `${(step / 12) * 100}%` }} transition={{ duration: ok ? 0.25 : 0.01, ease }} />
@@ -132,13 +135,26 @@ export default function Onboarding({ onComplete }: { onComplete: (profile: UserP
             transition={{ duration: ok ? 0.22 : 0.01, ease }}
           >
         {step === 0 ? (
-          <div style={{ minHeight: "100%", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+          <div style={{ display: "flex", flexDirection: "column" }}>
             <span className="t-eyebrow">silver lining</span>
             <h1 className="t-display" style={{ margin: "12px 0" }}>{heading}</h1>
             <p className="t-story hinge" style={{ margin: 0 }}>And still…</p>
             <p className="t-caption" style={{ marginTop: 22 }}>One story a day about your day. Read a few others. Stories disappear at midnight unless you keep them in your shoebox.</p>
             <div className="stack" style={{ gap: 8, marginTop: 40 }}>
-              <button className="btn btn-primary btn-full" onClick={() => setStep(1)}>Get started</button>
+              <button
+                className="btn btn-primary btn-full"
+                onClick={() => {
+                  if (flying) return;
+                  // let the crow fly off, then move on
+                  setFlying(true);
+                  setTimeout(() => {
+                    setStep(1);
+                    setFlying(false);
+                  }, ok ? 2300 : 300);
+                }}
+              >
+                Get started
+              </button>
               <button className="link center" onClick={() => setNotice("Sign-in is not connected in this preview.")}>I already have an account</button>
               {notice && <p className="t-caption" role="status" style={{ textAlign: "center" }}>{notice}</p>}
             </div>

@@ -870,3 +870,64 @@ a:focus-visible,
 @media (prefers-reduced-motion: reduce) {
   .rt-draw, .rt-pop, .rt-fade, .rt-bud, .rt-bloom, .rt-sway { animation-duration: .01s !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; }
 }
+
+/* ------------------------------------------------------------------ */
+/* Landing art: the crow on the first onboarding screen                */
+/* (app/proto/LandingArt.tsx + landingArt.ts)                          */
+/* ------------------------------------------------------------------ */
+.landing-art {
+  --surface: var(--surface-default);
+  --ground: var(--ground-default);
+  --land: var(--mood-turned);
+  --ink: var(--text-ink);
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -90px;
+  z-index: -1;
+  pointer-events: none;
+}
+.landing-art svg { display: block; width: 100%; height: auto; overflow: visible; }
+.landing-art .land,
+.landing-art .crow { stroke: var(--land); fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.landing-art .drift-a { animation: ln-drift 38s linear infinite; }
+.landing-art .drift-b { animation: ln-drift 54s linear infinite; animation-delay: -20s; }
+.landing-art .rays { transform-box: fill-box; transform-origin: center; animation: ln-spin 120s linear infinite; }
+.landing-art .shine { animation: ln-shine 5s ease-in-out infinite alternate; }
+.landing-art .sway { transform-box: fill-box; transform-origin: 50% 100%; animation: ln-sway var(--t, 4s) ease-in-out var(--d, 0s) infinite alternate; }
+.landing-art .breathe { transform-box: fill-box; transform-origin: 50% 100%; animation: ln-breathe 3.6s ease-in-out infinite; }
+.landing-art .head { transform-box: view-box; animation: ln-look 9s ease-in-out infinite; }
+.landing-art .lid { transform-box: fill-box; transform-origin: center; transform: scaleY(0); animation: ln-blink 6s linear infinite; }
+@keyframes ln-drift { from { transform: translateX(-160px); } to { transform: translateX(460px); } }
+@keyframes ln-spin { to { transform: rotate(360deg); } }
+@keyframes ln-shine { from { opacity: .35; } to { opacity: .8; } }
+@keyframes ln-sway { from { transform: rotate(calc(var(--a, 3deg) * -1)); } to { transform: rotate(var(--a, 3deg)); } }
+@keyframes ln-breathe { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.012, 1.02); } }
+@keyframes ln-look { 0%, 62%, 100% { transform: rotate(0deg); } 66%, 82% { transform: rotate(-7deg); } }
+@keyframes ln-blink { 0%, 93%, 100% { transform: scaleY(0); } 95%, 97% { transform: scaleY(1); } }
+/* takeoff, when Get started is pressed */
+.landing-art .wing-open { opacity: 0; }
+.landing-art .wing-open.far { transform: translate(-6px, -4px) scale(.82); transform-box: view-box; transform-origin: 10px -66px; }
+.landing-art .flap { transform-box: view-box; transform-origin: 10px -66px; }
+.landing-art .flight { transform-box: view-box; transform-origin: 150px 404px; }
+.landing-art .flying .flight { animation: ln-takeoff 2.4s cubic-bezier(.5, 0, .3, 1) forwards; }
+.landing-art .flying .wing-fold { animation: ln-hide .15s linear .28s forwards; }
+.landing-art .flying .wing-open { animation: ln-show .1s linear .28s forwards; }
+.landing-art .flying .flap { animation: ln-flap .32s ease-in-out .3s infinite alternate; }
+.landing-art .flying .breathe,
+.landing-art .flying .head { animation: none; }
+@keyframes ln-takeoff {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  13% { transform: translate(-4px, 8px) scale(1.02, .96); }
+  26% { transform: translate(14px, -30px) scale(1) rotate(-8deg); opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translate(250px, -470px) scale(.28) rotate(-14deg); opacity: 0; }
+}
+@keyframes ln-flap { from { transform: rotate(-6deg); } to { transform: rotate(62deg) scaleY(.8); } }
+@keyframes ln-hide { to { opacity: 0; } }
+@keyframes ln-show { to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .landing-art .drift-a, .landing-art .drift-b, .landing-art .rays, .landing-art .shine,
+  .landing-art .sway, .landing-art .breathe, .landing-art .head, .landing-art .lid { animation: none; }
+  .landing-art .flying .flight { animation: ln-hide .3s linear forwards; }
+}
